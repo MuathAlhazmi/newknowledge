@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  PARTICIPANT
+}
+
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+}
+
+enum ExamType {
+  PRE
+  POST
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  name               String
+  email              String             @unique
+  phone              String             @unique
+  role               UserRole
+  platformApproved   Boolean            @default(false)
+  enrollments        Enrollment[]
+  examAttempts       ExamAttempt[]
+  sentMessages       ChatMessage[]      @relation("SentMessages")
+  receivedMessages   ChatMessage[]      @relation("ReceivedMessages")
+  feedbacks          Feedback[]
+  postExamApprovals  PostExamApproval[]
+  courseGrades       CourseGrade[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  approvedPostExams  PostExamApproval[] @relation("ApprovedBy")
+}
+
+model Course {
+  id               String              @id @default(cuid())
+  title            String
+  description      String
+  enrollments      Enrollment[]
+  materials        Material[]
+  exams            Exam[]
+  zoomSessions     ZoomSession[]
+  feedbacks        Feedback[]
+  grades           CourseGrade[]
+  postExamApprovals PostExamApproval[]
+  gradingConfig    GradingConfig?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+model Enrollment {
+  id         String           @id @default(cuid())
+  userId     String
+  courseId   String
+  status     EnrollmentStatus @default(PENDING)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  pdfPath     String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Exam {
+  id               String       @id @default(cuid())
+  courseId         String
+  type             ExamType
+  title            String
+  durationMinutes  Int
+  isActive         Boolean      @default(true)
+  course           Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions        Question[]
+  attempts         ExamAttempt[]
+  createdAt        DateTime     @default(now())
+}
+
+model Question {
+  id           String      @id @default(cuid())
+  examId       String
+  text         String
+  order        Int
+  exam         Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  choices      Choice[]
+}
+
+model Choice {
+  id           String    @id @default(cuid())
+  questionId   String
+  text         String
+  isCorrect    Boolean   @default(false)
+  question     Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model ExamAttempt {
+  id           String    @id @default(cuid())
+  userId       String
+  examId       String
+  startedAt    DateTime  @default(now())
+  submittedAt  DateTime?
+  score        Float?
+  answersJson  String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam         Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+}
+
+model PostExamApproval {
+  id           String    @id @default(cuid())
+  userId       String
+  courseId     String
+  approvedById String
+  approvedAt   DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  approvedBy   User      @relation("ApprovedBy", fields: [approvedById], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model ChatMessage {
+  id          String    @id @default(cuid())
+  courseId    String
+  senderId    String
+  receiverId  String
+  text        String
+  createdAt   DateTime  @default(now())
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+}
+
+model Feedback {
+  id          String    @id @default(cuid())
+  courseId    String
+  userId      String
+  text        String
+  createdAt   DateTime  @default(now())
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CourseGrade {
+  id            String    @id @default(cuid())
+  courseId       String
+  userId         String
+  preScore       Float?
+  postScore      Float?
+  finalScore     Float?
+  isPassed       Boolean?
+  updatedByAdmin Boolean   @default(false)
+  course         Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+
+  @@unique([courseId, userId])
+}
+
+model GradingConfig {
+  id             String   @id @default(cuid())
+  courseId       String   @unique
+  preWeight      Int
+  postWeight     Int
+  passThreshold  Int
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ZoomSession {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  meetingUrl  String
+  startsAt    DateTime
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}

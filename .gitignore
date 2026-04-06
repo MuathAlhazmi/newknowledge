@@ -36,6 +36,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# prisma (local SQLite experiments; production uses Postgres)
+prisma/dev.db
+prisma/dev.db-journal
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local PDF uploads (used when Supabase Storage is not configured)
+/public/uploads/materials/*
+!/public/uploads/materials/.gitkeep
