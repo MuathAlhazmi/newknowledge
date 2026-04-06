@@ -1,0 +1,20 @@
+# Supabase direct DB (DIRECT_URL) is often unreachable from Vercel's build machines (P1001).
+# Migrations run here on push; Vercel only runs `next build` (vercel.json).
+name: Prisma migrate
+on:
+  push:
+    branches: [main]
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
