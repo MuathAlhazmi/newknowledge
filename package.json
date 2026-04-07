@@ -6,6 +6,7 @@
     "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
+    "build:deploy": "node scripts/vercel-aware-build.mjs",
     "start": "next start",
     "lint": "eslint",
     "prisma:generate": "prisma generate",
