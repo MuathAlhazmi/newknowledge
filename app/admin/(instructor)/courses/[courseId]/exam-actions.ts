@@ -81,21 +81,27 @@ export async function saveGradedExamAction(
 
   try {
     await db.$transaction(async (tx) => {
-      const exam = await tx.exam.upsert({
-        where: { courseId_type: { courseId, type } },
-        create: {
-          courseId,
-          type,
-          title,
-          durationMinutes,
-          isActive,
-        },
-        update: {
-          title,
-          durationMinutes,
-          isActive,
-        },
+      // Use findFirst + update/create instead of upsert: upsert relies on ON CONFLICT
+      // matching a DB unique on (courseId, type). If migration `exam_course_type_unique`
+      // is not applied yet, upsert throws Postgres 42P10.
+      const existing = await tx.exam.findFirst({
+        where: { courseId, type },
+        select: { id: true },
       });
+      const exam = existing
+        ? await tx.exam.update({
+            where: { id: existing.id },
+            data: { title, durationMinutes, isActive },
+          })
+        : await tx.exam.create({
+            data: {
+              courseId,
+              type,
+              title,
+              durationMinutes,
+              isActive,
+            },
+          });
 
       await tx.question.deleteMany({ where: { examId: exam.id } });
 
