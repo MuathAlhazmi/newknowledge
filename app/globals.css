@@ -304,6 +304,8 @@ button {
 
 .nk-btn {
   display: inline-flex;
+  position: relative;
+  isolation: isolate;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-btn);
@@ -311,6 +313,56 @@ button {
   font-size: 0.9rem;
   font-weight: 600;
   will-change: transform;
+}
+
+.nk-btn-primary::before,
+.nk-btn-secondary::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--primary) 92%, transparent),
+    color-mix(in srgb, var(--primary-strong) 88%, transparent),
+    color-mix(in srgb, #7c3aed 82%, transparent),
+    color-mix(in srgb, var(--primary) 92%, transparent)
+  );
+  background-size: 240% 240%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transform: scale(0.98);
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+  filter: drop-shadow(0 0 10px rgba(52, 89, 230, 0.28));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nk-btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    110deg,
+    transparent 18%,
+    color-mix(in srgb, white 34%, transparent) 45%,
+    transparent 72%
+  );
+  transform: translateX(-125%);
+  opacity: 0;
+  transition:
+    transform var(--motion-slow) var(--ease-emphasized),
+    opacity var(--motion-base) var(--ease-standard);
+  pointer-events: none;
+  z-index: 1;
 }
 
 button.nk-btn:focus-visible,
@@ -383,24 +435,38 @@ a.nk-btn:focus-visible,
 /* Brand cluster in site header */
 .nk-header-brand {
   position: relative;
+  isolation: isolate;
   transition:
     transform var(--motion-fast) var(--ease-emphasized),
     box-shadow var(--motion-base) var(--ease-standard),
     background-color var(--motion-base) var(--ease-standard);
 }
 
-.nk-header-brand::after {
+.nk-header-brand::before {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: -2px;
   border-radius: inherit;
-  background: radial-gradient(
-    ellipse 120% 100% at 30% 0%,
-    color-mix(in srgb, var(--primary) 28%, transparent),
-    transparent 65%
+  padding: 2px;
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--primary) 92%, transparent),
+    color-mix(in srgb, var(--primary-strong) 88%, transparent),
+    color-mix(in srgb, #7c3aed 82%, transparent),
+    color-mix(in srgb, var(--primary) 92%, transparent)
   );
+  background-size: 240% 240%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   opacity: 0;
-  transition: opacity var(--motion-base) var(--ease-standard);
+  transform: scale(0.98);
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+  filter: drop-shadow(0 0 10px rgba(52, 89, 230, 0.38));
   pointer-events: none;
   z-index: 0;
 }
@@ -417,14 +483,20 @@ a.nk-btn:focus-visible,
     background-color: color-mix(in srgb, var(--surface-muted) 75%, transparent);
   }
 
-  .nk-header-brand:hover::after {
-    opacity: 1;
+  .nk-header-brand:hover::before {
+    opacity: 0.95;
+    transform: scale(1);
+    animation: nkBrandBorderFlow 2s ease-in-out infinite;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .nk-header-brand:hover {
     transform: none;
+  }
+
+  .nk-header-brand:hover::before {
+    animation: none;
   }
 }
 
@@ -455,8 +527,38 @@ button.nk-btn:focus:not(:focus-visible) {
   transform: translateY(-2px);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .nk-btn-secondary:hover::before {
+    opacity: 0.92;
+    transform: scale(1);
+    animation: nkBrandBorderFlow 2s ease-in-out infinite;
+  }
+
+  .nk-btn-primary:hover::before {
+    opacity: 0;
+    animation: none;
+  }
+
+  .nk-btn-primary:hover::after {
+    opacity: 0.9;
+    transform: translateX(125%);
+  }
+}
+
 .nk-btn:active {
   transform: translateY(0) scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-btn-primary:hover::after {
+    transform: none;
+    opacity: 0.35;
+  }
+
+  .nk-btn-primary:hover::before,
+  .nk-btn-secondary:hover::before {
+    animation: none;
+  }
 }
 
 .nk-badge {
@@ -634,6 +736,18 @@ button.nk-btn:focus:not(:focus-visible) {
 @keyframes nkSkeletonShimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes nkBrandBorderFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
