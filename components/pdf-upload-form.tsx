@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { arCopy } from "@/lib/copy/ar";
+import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
 
 const u = arCopy.materialUpload;
 
@@ -37,18 +38,23 @@ export function PdfUploadForm({ courseId }: { courseId: string }) {
       const res = await fetch("/api/upload", { method: "POST", body: uploadData });
       const body = (await res.json()) as { path?: string; code?: string };
       if (!res.ok) {
-        setMessage(uploadErrorMessage(body.code));
+        const err = uploadErrorMessage(body.code);
+        setMessage(err);
+        snackbarError(err);
         return;
       }
       if (!body.path) {
         setMessage(u.errors.generic);
+        snackbarError(u.errors.generic);
         return;
       }
       setPdfPath(body.path);
       setMessageOk(true);
       setMessage(u.afterUpload);
+      snackbarSuccess(u.afterUpload);
     } catch {
       setMessage(u.errors.generic);
+      snackbarError(u.errors.generic);
     } finally {
       setBusy(false);
     }

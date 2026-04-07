@@ -1,9 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { AddEnrollmentState } from "@/app/admin/(instructor)/courses/[courseId]/enrollments/actions";
 import { addEnrollmentAction } from "@/app/admin/(instructor)/courses/[courseId]/enrollments/actions";
 import { Card } from "@/components/ui";
+import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
+import { useOnSerialChange } from "@/lib/use-on-serial-change";
 
 export type EnrollmentCandidate = { id: string; name: string; email: string };
 
@@ -15,6 +17,16 @@ export function AddEnrollmentForm({
   candidates: EnrollmentCandidate[];
 }) {
   const [state, formAction, pending] = useActionState(addEnrollmentAction, null as AddEnrollmentState);
+  const [formKey, setFormKey] = useState(0);
+
+  useOnSerialChange(JSON.stringify(state ?? null), () => {
+    if (!state) return;
+    if ("success" in state && state.success) {
+      snackbarSuccess(state.message);
+      setFormKey((k) => k + 1);
+    }
+    if ("error" in state) snackbarError(state.error);
+  });
 
   if (candidates.length === 0) {
     return (
@@ -27,7 +39,7 @@ export function AddEnrollmentForm({
   return (
     <Card elevated className="grid gap-4 p-4">
       <h2 className="text-base font-semibold">إضافة متدرب إلى الدورة</h2>
-      <form action={formAction} className="grid gap-3">
+      <form key={formKey} action={formAction} className="grid gap-3">
         <input type="hidden" name="courseId" value={courseId} />
         <label className="grid gap-2 text-sm">
           <span className="font-medium">المتدرب</span>
@@ -51,11 +63,6 @@ export function AddEnrollmentForm({
             <span>قيد اعتماد التسجيل (يمكنك اعتماد الطلب لاحقًا)</span>
           </label>
         </fieldset>
-        {state?.error && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-            {state.error}
-          </p>
-        )}
         <button type="submit" disabled={pending} className="nk-btn nk-btn-primary w-fit disabled:opacity-50">
           {pending ? "جارٍ الإضافة..." : "إضافة"}
         </button>

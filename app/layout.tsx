@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cairo, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
+import { AppToaster } from "@/components/app-toaster";
 import { SiteHeader } from "@/components/site-header";
 
 const cairo = Cairo({
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col text-[var(--foreground)]">
         <SiteHeader userPromise={userPromise} />
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6 md:py-10 lg:py-12">{children}</main>
+        <AppToaster />
       </body>
     </html>
   );

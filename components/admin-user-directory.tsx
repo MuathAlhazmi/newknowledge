@@ -9,6 +9,8 @@ import {
 } from "@/app/admin/user-crud-actions";
 import type { UpdateUserCrudState } from "@/app/admin/user-crud-actions";
 import { Card, StatusBadge } from "@/components/ui";
+import { snackbarError, snackbarSuccess, snackbarWarning } from "@/lib/snackbar";
+import { useOnSerialChange } from "@/lib/use-on-serial-change";
 
 export type AdminDirectoryUser = {
   id: string;
@@ -50,6 +52,12 @@ function EditUserDialog({
     updatePlatformUserCrudAction,
     null as UpdateUserCrudState,
   );
+
+  useOnSerialChange(JSON.stringify(state ?? null), () => {
+    if (!state) return;
+    if (state.kind === "success") snackbarSuccess(state.message);
+    if (state.kind === "error") snackbarError(state.message);
+  });
 
   useEffect(() => {
     if (state?.kind === "success") {
@@ -139,11 +147,6 @@ function EditUserDialog({
             <span className="font-medium">{arCopy.adminUserHub.newPasswordOptional}</span>
             <input name="newPassword" type="password" autoComplete="new-password" className="w-full" />
           </label>
-          {state?.kind === "error" && (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-              {state.message}
-            </p>
-          )}
           <div className="flex flex-wrap gap-2 pt-2">
             <button type="submit" disabled={pending} className="nk-btn nk-btn-primary disabled:opacity-50">
               {pending ? arCopy.templates.pending("الحفظ") : arCopy.adminUserHub.saveUserChanges}
@@ -181,11 +184,12 @@ export function AdminUserDirectory({
     startTransition(async () => {
       const r = await deletePlatformUserCrudAction(u.id);
       if (!r.ok) {
-        window.alert(r.message);
+        snackbarError(r.message);
         return;
       }
+      snackbarSuccess(arCopy.snackbar.userDeleted);
       if (r.warning) {
-        window.alert(r.warning);
+        snackbarWarning(r.warning);
       }
       router.refresh();
     });

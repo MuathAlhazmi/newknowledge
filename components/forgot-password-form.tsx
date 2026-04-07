@@ -1,17 +1,30 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import type { ForgotPasswordState } from "@/app/forgot-password/actions";
 import { forgotPasswordAction } from "@/app/forgot-password/actions";
 import { Card } from "@/components/ui";
+import { arCopy } from "@/lib/copy/ar";
+import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
+import { useOnSerialChange } from "@/lib/use-on-serial-change";
 
 export function ForgotPasswordForm() {
   const [state, formAction, pending] = useActionState(forgotPasswordAction, null as ForgotPasswordState);
 
+  useOnSerialChange(JSON.stringify(state ?? null), () => {
+    if (!state) return;
+    if ("ok" in state && state.ok) snackbarSuccess(arCopy.snackbar.forgotPasswordSent);
+    if ("error" in state) snackbarError(state.error);
+  });
+
   if (state && "ok" in state && state.ok) {
     return (
-      <Card elevated className="p-4 text-sm text-emerald-800">
-        إن وُجد حساب مرتبط بهذا البريد، ستصلك رسالة قريبًا. راجع صندوق الوارد أو البريد غير المرغوب.
+      <Card elevated className="p-4 text-sm text-[var(--foreground)]">
+        <p className="mb-3">يُرجى مراجعة البريد الإلكتروني للحصول على رابط الاستعادة إن وُجد حساب مرتبط.</p>
+        <Link href="/login" className="text-sm font-medium text-[var(--primary-strong)] hover:underline">
+          العودة إلى تسجيل الدخول
+        </Link>
       </Card>
     );
   }
@@ -31,11 +44,6 @@ export function ForgotPasswordForm() {
             placeholder="you@example.com"
           />
         </label>
-        {state && "error" in state && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-            {state.error}
-          </p>
-        )}
         <button type="submit" disabled={pending} className="nk-btn nk-btn-primary w-fit disabled:opacity-50">
           {pending ? "جارٍ الإرسال..." : "إرسال رابط الاستعادة"}
         </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 import { ExamTimer } from "@/components/exam-timer";
 import { Card, PageHeader, StatusBadge } from "@/components/ui";
 
@@ -58,6 +58,7 @@ export function QuizAttemptShell({
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [reviewFlags, setReviewFlags] = useState<Record<string, boolean>>({});
+  const [isSubmitting, startSubmitTransition] = useTransition();
 
   const totalQuestions = exam.questions.length;
   const answeredCount = useMemo(
@@ -69,6 +70,23 @@ export function QuizAttemptShell({
 
   function toggleReviewFlag(questionId: string) {
     setReviewFlags((prev) => ({ ...prev, [questionId]: !prev[questionId] }));
+  }
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (answeredCount !== totalQuestions || totalQuestions === 0) return;
+
+    const fd = new FormData();
+    fd.set("examId", exam.id);
+    fd.set("courseId", courseId);
+    for (const q of exam.questions) {
+      const choiceId = answers[q.id];
+      if (choiceId) fd.set(`q_${q.id}`, choiceId);
+    }
+
+    startSubmitTransition(() => {
+      void onSubmitAction(fd);
+    });
   }
 
   return (
@@ -119,16 +137,12 @@ export function QuizAttemptShell({
         </div>
       </Card>
 
-      <form action={onSubmitAction} className="grid gap-4">
-        <input type="hidden" name="examId" value={exam.id} />
-        <input type="hidden" name="courseId" value={courseId} />
-
+      <form onSubmit={handleSubmit} className="grid gap-4">
         {exam.questions.map((q, index) => {
           const answered = Boolean(answers[q.id]);
           const flagged = Boolean(reviewFlags[q.id]);
           return (
             <Card key={q.id} className="scroll-mt-32" id={`question-${q.id}`}>
-              <input type="hidden" name={`q_${q.id}`} value={answers[q.id] ?? ""} />
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <p className="font-medium">
                   {index + 1}. {q.text}
@@ -184,8 +198,12 @@ export function QuizAttemptShell({
           );
         })}
 
-        <button type="submit" disabled={answeredCount !== totalQuestions} className="nk-btn nk-btn-primary w-fit disabled:opacity-50 disabled:cursor-not-allowed">
-          تسليم الاختبار
+        <button
+          type="submit"
+          disabled={answeredCount !== totalQuestions || totalQuestions === 0 || isSubmitting}
+          className="nk-btn nk-btn-primary w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? "جارٍ التسليم..." : "تسليم الاختبار"}
         </button>
         {answeredCount !== totalQuestions ? (
           <p className="text-xs text-amber-700">يرجى الإجابة على جميع الأسئلة قبل تسليم الاختبار.</p>

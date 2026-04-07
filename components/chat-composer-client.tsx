@@ -5,6 +5,8 @@ import { useFormStatus } from "react-dom";
 import { CHAT_ACTION_IDLE, type ChatActionState } from "@/components/chat-types";
 import type { ReactNode } from "react";
 import { arCopy } from "@/lib/copy/ar";
+import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
+import { useOnSerialChange } from "@/lib/use-on-serial-change";
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -42,6 +44,12 @@ export function ChatComposerClient({
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(action, CHAT_ACTION_IDLE);
 
+  useOnSerialChange(JSON.stringify(state), () => {
+    if (state.submittedAt === 0) return;
+    if (state.ok) snackbarSuccess(state.message);
+    else snackbarError(state.message);
+  });
+
   useEffect(() => {
     if (state.ok && state.submittedAt > 0) {
       formRef.current?.reset();
@@ -75,11 +83,8 @@ export function ChatComposerClient({
         </div>
         <SubmitButton label={submitLabel} />
       </div>
-      <p
-        aria-live="polite"
-        className={`text-xs ${state.ok ? "text-[var(--text-muted)]" : "text-red-600"}`}
-      >
-        {pending ? arCopy.templates.pending("إرسال الرسالة") : state.message || " "}
+      <p className="sr-only" aria-live="polite">
+        {pending ? arCopy.templates.pending("إرسال الرسالة") : state.message || ""}
       </p>
     </form>
   );

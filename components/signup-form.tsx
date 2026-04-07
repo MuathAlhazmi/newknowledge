@@ -5,14 +5,26 @@ import { useActionState } from "react";
 import type { SignupState } from "@/app/signup/actions";
 import { signupAction } from "@/app/signup/actions";
 import { Card } from "@/components/ui";
+import { arCopy } from "@/lib/copy/ar";
+import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
+import { useOnSerialChange } from "@/lib/use-on-serial-change";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signupAction, null as SignupState);
 
+  useOnSerialChange(JSON.stringify(state ?? null), () => {
+    if (!state) return;
+    if ("error" in state) snackbarError(state.error);
+    if ("verifyEmail" in state && state.verifyEmail) snackbarSuccess(arCopy.snackbar.signupVerifyEmail);
+  });
+
   if (state && "verifyEmail" in state && state.verifyEmail) {
     return (
-      <Card elevated className="p-4 text-sm text-emerald-800">
-        تم إنشاء طلب التسجيل بنجاح. تحقق من بريدك الإلكتروني واتبع رابط التأكيد إن وُجد، ثم سجّل الدخول. بعد اعتماد الحساب ستُتاح لك الدورات.
+      <Card elevated className="p-4 text-sm text-[var(--foreground)]">
+        <p className="mb-3">يُرجى مراجعة البريد الإلكتروني وإكمال التأكيد عند توفر الرابط، ثم العودة إلى تسجيل الدخول.</p>
+        <Link href="/login" className="text-sm font-medium text-[var(--primary-strong)] hover:underline">
+          الانتقال إلى تسجيل الدخول
+        </Link>
       </Card>
     );
   }
@@ -63,11 +75,6 @@ export function SignupForm() {
             dir="ltr"
           />
         </label>
-        {state && "error" in state && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-            {state.error}
-          </p>
-        )}
         <button type="submit" disabled={pending} className="nk-btn nk-btn-primary w-fit disabled:opacity-50">
           {pending ? "جارٍ إنشاء الحساب..." : "إنشاء حساب"}
         </button>

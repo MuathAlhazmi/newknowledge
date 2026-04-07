@@ -6,7 +6,9 @@ import {
   type SaveExamState,
 } from "@/app/admin/(instructor)/courses/[courseId]/exam-actions";
 import { arCopy } from "@/lib/copy/ar";
-import { Card, WarningCard } from "@/components/ui";
+import { Card } from "@/components/ui";
+import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
+import { useOnSerialChange } from "@/lib/use-on-serial-change";
 
 function makeRowId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -66,6 +68,12 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
   const [questions, setQuestions] = useState<QuestionRow[]>(() => rowsFromInitial(initial));
   const [state, setState] = useState<SaveExamState>(null);
   const [isPending, startTransition] = useTransition();
+
+  useOnSerialChange(JSON.stringify(state ?? null), () => {
+    if (!state) return;
+    if (state.ok === true) snackbarSuccess(state.message);
+    if (state.ok === false) snackbarError(state.error);
+  });
 
   function setCorrectAnswer(questionId: string, choiceId: string) {
     setQuestions((prev) =>
@@ -166,13 +174,6 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6">
-      {state?.ok === false ? <WarningCard>{state.error}</WarningCard> : null}
-      {state?.ok === true ? (
-        <Card elevated variant="highlight" interactive={false} className="border border-emerald-700/30 bg-emerald-950/20 p-4 text-sm text-emerald-100">
-          {state.message}
-        </Card>
-      ) : null}
-
       <Card elevated className="grid gap-4 p-5">
         <label className="grid gap-1 text-sm">
           <span className="font-medium text-[var(--foreground)]">{ae.examTitleLabel}</span>

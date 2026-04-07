@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser, resolvePostLoginPath } from "@/lib/auth";
+import { LoginPageFeedback } from "@/components/login-page-feedback";
 import { Card, PageHeader } from "@/components/ui";
 import { LoginForm } from "@/components/login-form";
 
@@ -27,16 +28,7 @@ export default async function LoginPage({
         title="تسجيل الدخول"
         subtitle="استخدم البريد الإلكتروني وكلمة المرور المعتمدين. يجب أن يكون بريدك مسجلًا في المنصة."
       />
-      {passwordUpdated && (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-          تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.
-        </p>
-      )}
-      {authError && (
-        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-          تعذر إكمال المصادقة. حاول تسجيل الدخول مرة أخرى أو أعد طلب رابط الاستعادة.
-        </p>
-      )}
+      <LoginPageFeedback passwordUpdated={passwordUpdated} authError={authError} />
       {supabaseConfigured ? (
         <LoginForm />
       ) : (
