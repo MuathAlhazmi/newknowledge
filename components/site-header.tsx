@@ -55,6 +55,9 @@ export async function SiteHeader({
                   <span className="nk-badge nk-badge-muted max-w-[10rem] truncate" title={user.name}>
                     {user.name}
                   </span>
+                  <Link href="/profile" className="nk-btn nk-btn-secondary text-sm !px-3 !py-2">
+                    الملف الشخصي
+                  </Link>
                   <form action={logoutAction}>
                     <button className="nk-btn nk-btn-secondary text-sm !px-3 !py-2" type="submit">
                       تسجيل الخروج

@@ -20,6 +20,22 @@ export const arCopy = {
     start: "بدء",
     go: "انتقال",
   },
+  profile: {
+    title: "الملف الشخصي",
+    subtitle: "تحديث بياناتك الشخصية الأساسية المستخدمة داخل المنصة.",
+    nameLabel: "الاسم الكامل",
+    phoneLabel: "رقم الجوال",
+    phonePlaceholder: "+9665xxxxxxxx",
+    save: "حفظ البيانات",
+    saving: "جارٍ الحفظ...",
+    saved: "تم تحديث بيانات الملف الشخصي بنجاح.",
+    errors: {
+      notAllowed: "هذه الصفحة مخصصة للمدرب والمتدرب فقط.",
+      nameRequired: "يرجى إدخال الاسم الكامل.",
+      phoneInvalid: "يرجى إدخال رقم جوال صالح (8 أحرف على الأقل).",
+      phoneTaken: "رقم الجوال مسجّل مسبقًا.",
+    },
+  },
   templates: {
     success: (action: string) => `تم ${action} بنجاح.`,
     validation: (action: string) => `يرجى ${action}.`,
