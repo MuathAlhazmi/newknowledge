@@ -22,7 +22,15 @@ export default async function CourseDetailsPage({
   const { courseId } = await params;
   const enrollment = await db.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId } },
-    include: { course: true },
+    select: {
+      status: true,
+      course: {
+        select: {
+          title: true,
+          description: true,
+        },
+      },
+    },
   });
   if (!enrollment) notFound();
 

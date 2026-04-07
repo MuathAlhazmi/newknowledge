@@ -8,7 +8,17 @@ export default async function CoursesPage() {
   const user = await requireParticipant();
   const enrollments = await db.enrollment.findMany({
     where: { userId: user.id },
-    include: { course: true },
+    select: {
+      id: true,
+      status: true,
+      courseId: true,
+      course: {
+        select: {
+          title: true,
+          description: true,
+        },
+      },
+    },
   });
 
   return (

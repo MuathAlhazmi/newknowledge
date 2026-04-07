@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser, resolvePostLoginPath } from "@/lib/auth";
+import { getCurrentUser, resolveRoleHomePath } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DashboardNavGate } from "@/components/dashboard-nav-gate";
 import { HeaderGuestNav, HeaderRoleNav } from "@/components/header-primary-nav";
@@ -27,7 +27,7 @@ export async function SiteHeader({
   userPromise: ReturnType<typeof getCurrentUser>;
 }) {
   const user = await userPromise;
-  const brandHref = user ? await resolvePostLoginPath(user) : "/";
+  const brandHref = user ? resolveRoleHomePath(user) : "/";
 
   return (
     <header className="sticky top-0 z-40 bg-transparent">

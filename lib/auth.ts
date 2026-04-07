@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import type { User } from "@prisma/client";
 import { UserRole } from "@prisma/client";
 import { db } from "@/lib/db";
@@ -13,6 +14,7 @@ export async function resolvePostLoginPath(user: User): Promise<string> {
   const enrollments = await db.enrollment.findMany({
     where: { userId: user.id },
     select: { courseId: true },
+    take: 2,
   });
   if (enrollments.length === 1) {
     return `/courses/${enrollments[0].courseId}`;
@@ -20,7 +22,14 @@ export async function resolvePostLoginPath(user: User): Promise<string> {
   return "/courses";
 }
 
-export async function getCurrentUser() {
+export function resolveRoleHomePath(user: Pick<User, "role" | "platformApproved">): string {
+  if (user.role === UserRole.ADMIN) return "/admin";
+  if (user.role === UserRole.INSTRUCTOR) return "/admin/courses";
+  if (!user.platformApproved) return "/pending-approval";
+  return "/courses";
+}
+
+export const getCurrentUser = cache(async function getCurrentUser() {
   const hasKey =
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) ||
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -43,7 +52,7 @@ export async function getCurrentUser() {
   return db.user.findFirst({
     where: { email: { equals: user.email, mode: "insensitive" } },
   });
-}
+});
 
 export async function requireUser() {
   const user = await getCurrentUser();
