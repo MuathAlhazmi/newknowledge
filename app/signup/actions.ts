@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { UserRole } from "@prisma/client";
 import { resolvePostLoginPath } from "@/lib/auth";
+import { arCopy } from "@/lib/copy/ar";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -83,8 +84,6 @@ export async function signupAction(_prev: SignupState, formData: FormData): Prom
 
     return { verifyEmail: true };
   } catch {
-    return {
-      error: "تعذر إكمال التسجيل في المنصة. إن وُجد حساب لدى مزود الدخول، قد تحتاج لمساعدة المدير.",
-    };
+    return { error: arCopy.snackbar.signupCompleteFailed };
   }
 }

@@ -17,7 +17,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "منصة العلم الجديد",
-  description: "منصة تدريب إلكتروني لإدارة المحتوى والاختبارات",
+  description: "بيئة تدريب متكاملة لإدارة المحتوى، الاختبارات، والتواصل الرسمي.",
+  icons: {
+    icon: [{ url: "/brand/newknowledge.svg", type: "image/svg+xml" }],
+    apple: "/brand/newknowledge.png",
+  },
 };
 
 export default function RootLayout({

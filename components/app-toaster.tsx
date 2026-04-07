@@ -9,16 +9,17 @@ export function AppToaster() {
       position="top-center"
       richColors
       closeButton
+      className="font-sans"
       toastOptions={{
         classNames: {
           toast:
-            "group border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--foreground)] text-sm shadow-[var(--shadow-md)]",
-          title: "font-semibold",
-          description: "text-[var(--text-muted)]",
-          actionButton: "bg-[var(--primary)] text-white",
-          cancelButton: "bg-[var(--surface-muted)]",
+            "group font-sans border border-[var(--border-strong)] bg-[var(--surface)] text-[var(--foreground)] text-sm shadow-[var(--shadow-md)]",
+          title: "font-sans font-semibold",
+          description: "font-sans text-[var(--text-muted)]",
+          actionButton: "font-sans bg-[var(--primary)] text-white",
+          cancelButton: "font-sans bg-[var(--surface-muted)]",
           closeButton:
-            "border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--border)]",
+            "font-sans border-[var(--border)] bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--border)]",
         },
       }}
     />

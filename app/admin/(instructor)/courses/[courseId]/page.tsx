@@ -53,21 +53,21 @@ export default async function AdminCourseHubPage({
   const learningTiles: TileDef[] = [
     {
       title: "المحتوى (PDF)",
-      description: "رفع وإدارة مواد الدورة.",
+      description: "رفع مواد PDF وتنظيمها لعرضها داخل المنصة دون مغادرة الواجهة التدريبية.",
       badges: <StatusBadge text={arCountMaterials(c.materials)} tone="info" />,
       href: `${base}/materials`,
       icon: "materials",
     },
     {
       title: "الاختبارات",
-      description: "تنظيم الاختبارات قبلية وبعدية.",
+      description: "اختبارات قبلية وبعدية بمدد زمنية واضحة وتسليم منظم.",
       badges: <StatusBadge text={arCountExams(c.exams)} tone="info" />,
       href: `${base}/exams`,
       icon: "exams",
     },
     {
       title: "الدرجات",
-      description: "ضبط معايير التقييم ومتابعة درجات المتدربين.",
+      description: "ضبط معايير التقييم ومتابعة درجات المتدربين والملاحظات.",
       href: `${base}/grades`,
       icon: "grades",
     },
@@ -76,27 +76,27 @@ export default async function AdminCourseHubPage({
   const opsTiles: TileDef[] = [
     {
       title: "التسجيلات",
-      description: "اعتماد الطلبات ومتابعة المسجّلين.",
+      description: "اعتماد طلبات التسجيل ومتابعة المسجّلين.",
       badges: <StatusBadge text={arCountEnrollments(c.enrollments)} tone="info" />,
       href: `${base}/enrollments`,
       icon: "enrollments",
     },
     {
       title: "جلسات Zoom",
-      description: "روابط الجلسات والتنظيم.",
+      description: "روابط وتنظيم للجلسات الحضورية عن بُعد.",
       badges: <StatusBadge text={arCountZoomSessions(c.zoomSessions)} tone="info" />,
       href: `${base}/zoom`,
       icon: "zoom",
     },
     {
       title: "المحادثات",
-      description: "متابعة محادثات المتدربين والرد عليهم.",
+      description: "متابعة المحادثات الرسمية مع المتدربين والرد عليها.",
       href: `${base}/chat`,
       icon: "chat",
     },
     {
       title: "التغذية الراجعة",
-      description: "قراءة ملاحظات المتدربين.",
+      description: "قراءة ملاحظات المتدربين وتقييماتهم.",
       badges: <StatusBadge text={arCountFeedbackReplies(c.feedbacks)} tone="info" />,
       href: `${base}/feedback`,
       icon: "feedback",

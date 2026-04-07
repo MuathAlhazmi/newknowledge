@@ -31,19 +31,19 @@ export default async function CourseDetailsPage({
   const learningTiles: TileDef[] = [
     {
       title: "المحتوى (PDF)",
-      description: "عرض وتحميل مواد الدورة من داخل المنصة.",
+      description: "عرض ملفات PDF مباشرة دون مغادرة الواجهة التدريبية، مع إمكانية التحميل عند الحاجة.",
       href: `/courses/${courseId}/materials`,
       icon: "materials",
     },
     {
       title: "الاختبارات",
-      description: "اختبارات قبلية وبعدية ومتابعة النتائج.",
+      description: "قياس الأداء بمدد زمنية واضحة وتسليم منظم.",
       href: `/courses/${courseId}/exams`,
       icon: "exams",
     },
     {
       title: "الدرجة العامة",
-      description: "متابعة درجتك الإجمالية في الدورة.",
+      description: "متابعة لدرجتك الإجمالية والملاحظات داخل الدورة.",
       href: `/courses/${courseId}/grades`,
       icon: "grades",
     },
@@ -52,19 +52,19 @@ export default async function CourseDetailsPage({
   const sessionTiles: TileDef[] = [
     {
       title: "جلسات Zoom",
-      description: "روابط الجلسات المباشرة والتنظيم.",
+      description: "روابط وتنظيم للجلسات الحضورية عن بُعد.",
       href: `/courses/${courseId}/zoom`,
       icon: "zoom",
     },
     {
       title: "المحادثة المباشرة",
-      description: "تواصل مع المدرب والمجموعة.",
+      description: "محادثة رسمية مع المدرب والمجموعة داخل الدورة.",
       href: `/courses/${courseId}/chat`,
       icon: "chat",
     },
     {
       title: "التغذية الراجعة",
-      description: "شارك ملاحظاتك وتقييمك للدورة.",
+      description: "شارك ملاحظاتك وتقييمك لمساعدتنا على تحسين التجربة التدريبية.",
       href: `/courses/${courseId}/feedback`,
       icon: "feedback",
     },

@@ -87,7 +87,7 @@ export function AdminDashboardHero({
 function Chevron() {
   return (
     <svg
-      className="h-5 w-5 shrink-0 text-[var(--text-muted)] transition-transform duration-200 group-hover:-translate-x-1 rtl:scale-x-[-1] rtl:group-hover:translate-x-1"
+      className="h-5 w-5 shrink-0 text-[var(--text-muted)] transition-transform duration-200 rtl:scale-x-[-1] ltr:group-hover:-translate-x-1 rtl:group-hover:translate-x-1"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -151,14 +151,14 @@ export function AdminShortcutTile({
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         ) : null}
-        <div className="flex min-h-[7.5rem] flex-col gap-3">
-          <div className="flex items-start justify-between gap-2">
+        <div className="flex min-h-[7.5rem] w-full flex-col gap-3 text-start">
+          <div className="flex w-full items-start justify-between gap-2">
             <span className="flex rounded-xl bg-[var(--primary-soft)] p-2.5 text-[var(--primary-strong)]">
               {shortcutIcon(icon)}
             </span>
             <Chevron />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 w-full flex-1 text-start">
             <p className="font-semibold text-[var(--foreground)]">{title}</p>
             <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--text-muted)]">{description}</p>
           </div>

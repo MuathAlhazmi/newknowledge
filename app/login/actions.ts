@@ -1,9 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { resolvePostLoginPath } from "@/lib/auth";
+import { arCopy } from "@/lib/copy/ar";
 import { db } from "@/lib/db";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { resolvePostLoginPath } from "@/lib/auth";
 
 export type LoginState = { error: string } | null;
 
@@ -19,15 +20,9 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   if (signError) {
     const msg = signError.message.toLowerCase();
     if (msg.includes("email not confirmed") || msg.includes("confirm your email")) {
-      return {
-        error:
-          "لم يُؤكَّد البريد بعد. راجع صندوق الوارد أو اطلب إعادة إرسال التأكيد. يمكن للمشرف تعطيل «Confirm email» مؤقتًا من إعدادات Auth في Supabase.",
-      };
+      return { error: arCopy.snackbar.loginEmailNotConfirmed };
     }
-    return {
-      error:
-        "البريد أو كلمة المرور غير صحيحة في Supabase Auth. إن كان المستخدم موجودًا في الجداول فقط، أنشئه من لوحة /admin أو شغّل create-admin، أو جرّب «نسيت كلمة المرور».",
-    };
+    return { error: arCopy.snackbar.loginInvalidCredentials };
   }
 
   const {

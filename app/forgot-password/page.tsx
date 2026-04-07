@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { SiteLogo } from "@/components/site-logo";
 import { PageHeader } from "@/components/ui";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
 
 export default function ForgotPasswordPage() {
   return (
     <div className="mx-auto grid w-full max-w-xl gap-5">
+      <SiteLogo variant="auth" />
       <PageHeader
         title="استعادة كلمة المرور"
         subtitle="أدخل بريدك المسجّل في المنصة. ستصلك رسالة من Supabase برابط لإعادة التعيين."

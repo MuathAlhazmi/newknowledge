@@ -1,7 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-
 export function isDashboardAppPath(pathname: string): boolean {
   return (
     pathname === "/admin" ||
@@ -11,8 +9,7 @@ export function isDashboardAppPath(pathname: string): boolean {
   );
 }
 
+/** Previously hid role links on dashboard routes; we always show them now for quicker navigation. */
 export function DashboardNavGate({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  if (isDashboardAppPath(pathname)) return null;
   return <>{children}</>;
 }

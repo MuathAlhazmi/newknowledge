@@ -16,7 +16,6 @@ export default async function SignupPage() {
   return (
     <div className="mx-auto grid w-full max-w-xl gap-6">
       <PageHeader
-        eyebrow="البداية"
         title="إنشاء حساب"
         subtitle="أدخل بياناتك للتسجيل كمتدرب. سيتم اعتماد الحساب قبل إتاحة الدورات."
       />

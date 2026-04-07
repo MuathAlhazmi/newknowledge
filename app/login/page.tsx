@@ -24,7 +24,6 @@ export default async function LoginPage({
   return (
     <div className="mx-auto grid w-full max-w-xl gap-6">
       <PageHeader
-        eyebrow="الوصول"
         title="تسجيل الدخول"
         subtitle="استخدم البريد الإلكتروني وكلمة المرور المعتمدين. يجب أن يكون بريدك مسجلًا في المنصة."
       />

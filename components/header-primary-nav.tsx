@@ -5,7 +5,7 @@ import { HeaderNavLink } from "@/components/header-nav-link";
 
 export function HeaderGuestNav() {
   return (
-    <ul className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-2.5">
+    <ul className="m-0 flex min-w-0 list-none flex-wrap items-center justify-start gap-2 p-0 sm:gap-2.5">
       <li>
         <HeaderNavLink href="/login" variant="primary" className="!px-4 !py-2 !text-sm">
           تسجيل الدخول
@@ -31,10 +31,7 @@ export function HeaderRoleNav({
 
   if (role === UserRole.ADMIN) {
     return (
-      <ul className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 md:gap-4">
-        <li>
-          <HeaderNavLink href="/">الرئيسية</HeaderNavLink>
-        </li>
+      <ul className="m-0 flex min-w-0 list-none flex-wrap items-center justify-start gap-2 p-0 sm:gap-3 md:gap-4">
         <li>
           <HeaderNavLink href="/admin" prefixMatch>
             إدارة المنصة
@@ -46,10 +43,7 @@ export function HeaderRoleNav({
 
   if (role === UserRole.INSTRUCTOR) {
     return (
-      <ul className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 md:gap-4">
-        <li>
-          <HeaderNavLink href="/">الرئيسية</HeaderNavLink>
-        </li>
+      <ul className="m-0 flex min-w-0 list-none flex-wrap items-center justify-start gap-2 p-0 sm:gap-3 md:gap-4">
         <li>
           <HeaderNavLink href="/admin/courses" prefixMatch>
             لوحة الدورات
@@ -61,10 +55,7 @@ export function HeaderRoleNav({
 
   if (pendingParticipant) {
     return (
-      <ul className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 md:gap-4">
-        <li>
-          <HeaderNavLink href="/">الرئيسية</HeaderNavLink>
-        </li>
+      <ul className="m-0 flex min-w-0 list-none flex-wrap items-center justify-start gap-2 p-0 sm:gap-3 md:gap-4">
         <li>
           <HeaderNavLink href="/pending-approval">حالة اعتماد الحساب</HeaderNavLink>
         </li>
@@ -72,16 +63,5 @@ export function HeaderRoleNav({
     );
   }
 
-  return (
-    <ul className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 md:gap-4">
-      <li>
-        <HeaderNavLink href="/">الرئيسية</HeaderNavLink>
-      </li>
-      <li>
-        <HeaderNavLink href="/courses" prefixMatch>
-          دوراتي
-        </HeaderNavLink>
-      </li>
-    </ul>
-  );
+  return null;
 }

@@ -14,35 +14,17 @@ export function HeaderNavLink({
   children,
   variant = "text",
   prefixMatch = false,
-  layout = "header",
   className = "",
 }: {
   href: string;
   children: React.ReactNode;
   variant?: "text" | "primary" | "secondary";
   prefixMatch?: boolean;
-  layout?: "header" | "sidebar";
   className?: string;
 }) {
   const pathname = usePathname();
   const active = isActive(pathname, href, prefixMatch);
   const extra = className.trim();
-
-  if (layout === "sidebar" && variant === "text") {
-    return (
-      <Link
-        href={href}
-        aria-current={active ? "page" : undefined}
-        className={`nk-header-link block w-full rounded-[var(--radius-btn)] px-3 py-2.5 text-sm font-medium transition-colors ${
-          active
-            ? "border border-[var(--border)] bg-[var(--primary-soft)] text-[var(--primary-strong)]"
-            : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]"
-        } ${extra}`.trim()}
-      >
-        {children}
-      </Link>
-    );
-  }
 
   if (variant === "primary") {
     return (
@@ -72,10 +54,10 @@ export function HeaderNavLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`nk-header-link rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+      className={`nk-header-link nk-header-nav-pill rounded-full px-3.5 py-2 text-sm font-medium ${
         active
           ? "bg-[var(--primary-soft)] font-semibold text-[var(--primary-strong)] ring-1 ring-[var(--border)]"
-          : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--foreground)]"
+          : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)]/90"
       } ${extra}`.trim()}
     >
       {children}

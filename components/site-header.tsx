@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, resolvePostLoginPath } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DashboardNavGate } from "@/components/dashboard-nav-gate";
 import { HeaderGuestNav, HeaderRoleNav } from "@/components/header-primary-nav";
 import { HeaderUserCluster } from "@/components/header-user-cluster";
+import { SiteLogo } from "@/components/site-logo";
 
 async function logoutAction() {
   "use server";
@@ -26,26 +27,24 @@ export async function SiteHeader({
   userPromise: ReturnType<typeof getCurrentUser>;
 }) {
   const user = await userPromise;
+  const brandHref = user ? await resolvePostLoginPath(user) : "/";
 
   return (
     <header className="sticky top-0 z-40 bg-transparent">
       <div className="mx-auto max-w-6xl px-4 pt-3 pb-2 md:px-6 md:pt-3.5 md:pb-3">
-        <div className="nk-header-inner flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:py-3.5">
+        <div className="nk-header-inner flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 px-4 py-3 md:px-5 md:py-3.5">
           <Link
-            href="/"
-            className="nk-header-link shrink-0 rounded-xl px-2 py-1 -mx-2 text-xl font-bold tracking-tight transition-colors duration-200 hover:bg-[var(--surface-muted)]/60"
-            style={{
-              backgroundImage: `linear-gradient(135deg, var(--primary-strong), var(--primary))`,
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-            }}
+            href={brandHref}
+            className="nk-header-link nk-header-brand flex w-fit max-w-full shrink-0 items-center gap-2.5 self-start rounded-xl px-2 py-1.5 -mx-2 text-lg font-bold tracking-tight sm:self-auto md:gap-3 md:text-xl"
+            aria-label={user ? "الرجوع إلى لوحة العمل" : "الصفحة الرئيسية"}
           >
-            العلم الجديد
+            <SiteLogo variant="header" />
+            <span className="nk-brand-gradient-text hidden min-[380px]:inline">العلم الجديد</span>
           </Link>
           <nav
             aria-label="القائمة الرئيسية"
-            className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3 text-sm"
+            dir="rtl"
+            className="flex w-full min-w-0 flex-col gap-2 text-sm sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-start sm:gap-3"
           >
             {user ? (
               <>

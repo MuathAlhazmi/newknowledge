@@ -93,7 +93,7 @@ function TileIcon({ name }: { name: CourseHubTileIcon }) {
 function Chevron() {
   return (
     <svg
-      className="h-5 w-5 shrink-0 text-[var(--text-muted)] transition-transform duration-200 group-hover:-translate-x-1 rtl:scale-x-[-1] rtl:group-hover:translate-x-1"
+      className="h-5 w-5 shrink-0 text-[var(--text-muted)] transition-transform duration-200 rtl:scale-x-[-1] ltr:group-hover:-translate-x-1 rtl:group-hover:translate-x-1"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -119,8 +119,8 @@ function TileBody({
   enabled: boolean;
 }) {
   return (
-    <div className="flex min-h-[7.5rem] flex-col gap-3">
-      <div className="flex items-start justify-between gap-2">
+    <div className="flex min-h-[7.5rem] w-full flex-col gap-3 text-start">
+      <div className="flex w-full items-start justify-between gap-2">
         <span
           className={`flex rounded-xl p-2.5 ${
             enabled ? "bg-[var(--primary-soft)] text-[var(--primary-strong)]" : "bg-[var(--surface-muted)] text-[var(--text-muted)]"
@@ -130,12 +130,12 @@ function TileBody({
         </span>
         {enabled ? <Chevron /> : null}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 w-full flex-1 text-start">
         <p className="font-semibold text-[var(--foreground)]">{title}</p>
         {description ? (
           <p className="mt-1 line-clamp-2 text-sm leading-snug text-[var(--text-muted)]">{description}</p>
         ) : null}
-        {badges ? <div className="mt-2 flex flex-wrap gap-2">{badges}</div> : null}
+        {badges ? <div className="mt-2 flex flex-wrap justify-start gap-2">{badges}</div> : null}
       </div>
       {enabled ? (
         <span className="text-xs font-bold text-[var(--primary-strong)]">{arCopy.buttons.start}</span>

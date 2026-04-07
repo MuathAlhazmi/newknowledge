@@ -12,6 +12,8 @@
   --primary: #3459e6;
   --primary-strong: #1e40af;
   --primary-soft: #e4ebff;
+  /* Header wordmark, home hero h1, gradient-mask logo — keep in sync */
+  --nk-brand-gradient: linear-gradient(135deg, var(--primary-strong), var(--primary));
   --success-soft: #dcfce7;
   --warning-soft: #fef3c7;
   --warning-amber: #b45309;
@@ -29,9 +31,6 @@
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
   --lift-y: -4px;
-  --sidebar-width: 15.5rem;
-  --sidebar-bg: #eef2ff;
-  --sidebar-border: #c7d4ff;
   --dashboard-content-radius: 1.125rem;
   --header-bar-bg: rgba(255, 255, 255, 0.86);
   --site-header-height: 6rem;
@@ -60,6 +59,11 @@ body {
     radial-gradient(ellipse 120% 80% at 100% 0%, rgba(228, 235, 255, 0.85) 0%, transparent 55%),
     radial-gradient(ellipse 100% 60% at 0% 100%, rgba(219, 228, 255, 0.5) 0%, transparent 50%);
   background-attachment: fixed;
+}
+
+/* Sonner renders in a portal; enforce Cairo like the rest of the app */
+[data-sonner-toaster] {
+  font-family: var(--font-cairo), Arial, Helvetica, sans-serif;
 }
 
 a {
@@ -138,6 +142,90 @@ button {
   font-size: clamp(0.9rem, 0.5vw + 0.85rem, 1.05rem);
   line-height: 1.65;
   max-width: 42rem;
+}
+
+.nk-brand-gradient-text {
+  background-image: var(--nk-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Course workspace: pill strip inside a soft panel (matches header bar language) */
+.nk-course-subnav {
+  margin-bottom: 1.25rem;
+  width: 100%;
+  overflow: visible;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-muted) 55%, var(--surface));
+  box-shadow: var(--shadow-sm), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  padding: 0.55rem 0.7rem;
+}
+
+/* Phones: wrap pills so nothing is clipped and hovers stay visible (no overflow-x scrollport). */
+.nk-course-subnav ul {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  list-style: none;
+  margin: 0;
+  padding-inline: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  /* flex-start = main-start: right edge under dir=rtl + row */
+  justify-content: flex-start;
+  gap: 0.45rem 0.55rem;
+  overflow-x: visible;
+  overflow-y: visible;
+  padding-block: 0.2rem;
+}
+
+/* Tablet+: single row + horizontal scroll; extra vertical padding so oval hover (lift + shadow) isn’t clipped. */
+@media (min-width: 768px) {
+  .nk-course-subnav ul {
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-block: 0.85rem;
+    padding-inline: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+}
+
+/* Signed-out home — hero glow + CTA band */
+.nk-landing-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  padding-block: clamp(2rem, 5vw, 3.75rem);
+  padding-inline: clamp(1rem, 3vw, 2rem);
+}
+
+.nk-landing-hero-glow {
+  position: absolute;
+  inset: -25% -15% auto -15%;
+  height: 75%;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 0%,
+    color-mix(in srgb, var(--primary) 24%, transparent) 0%,
+    transparent 68%
+  );
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.nk-landing-cta-band {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary-soft) 90%, var(--surface)) 0%,
+    var(--surface-muted) 100%
+  );
+  box-shadow: var(--shadow-highlight);
 }
 
 .nk-section {
@@ -230,6 +318,114 @@ a.nk-btn:focus-visible,
 .nk-header-link:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+
+/* Header / course strip: pill links — gradient wash + lift on hover */
+.nk-header-nav-pill {
+  position: relative;
+  isolation: isolate;
+  transition:
+    color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+
+.nk-header-nav-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary) 22%, transparent) 0%,
+    color-mix(in srgb, var(--primary-strong) 8%, transparent) 50%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-standard);
+  z-index: -1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nk-header-nav-pill:hover:not([aria-current="page"])::before {
+    opacity: 1;
+  }
+
+  .nk-header-nav-pill:hover:not([aria-current="page"]) {
+    color: var(--primary-strong);
+    transform: translateY(-2px);
+    box-shadow:
+      0 4px 14px rgba(52, 89, 230, 0.14),
+      0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  .nk-header-nav-pill[aria-current="page"]:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 6px 18px rgba(30, 64, 175, 0.12),
+      0 0 0 1px var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-header-nav-pill,
+  .nk-header-nav-pill::before {
+    transition-duration: 0.01ms;
+  }
+
+  .nk-header-nav-pill:hover,
+  .nk-header-nav-pill[aria-current="page"]:hover {
+    transform: none;
+  }
+}
+
+/* Brand cluster in site header */
+.nk-header-brand {
+  position: relative;
+  transition:
+    transform var(--motion-fast) var(--ease-emphasized),
+    box-shadow var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard);
+}
+
+.nk-header-brand::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse 120% 100% at 30% 0%,
+    color-mix(in srgb, var(--primary) 28%, transparent),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-standard);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nk-header-brand > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nk-header-brand:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(52, 89, 230, 0.12);
+    background-color: color-mix(in srgb, var(--surface-muted) 75%, transparent);
+  }
+
+  .nk-header-brand:hover::after {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-header-brand:hover {
+    transform: none;
+  }
 }
 
 button.nk-btn:focus:not(:focus-visible) {
@@ -362,7 +558,7 @@ button.nk-btn:focus:not(:focus-visible) {
     inset 0 1px 0 0 rgba(255, 255, 255, 0.65);
 }
 
-/* App dashboard shell: sidebar (RTL first column = visual right) + main canvas */
+/* App dashboard shell: full-width main column (nav in header + course subnav) */
 .nk-dashboard {
   width: 100%;
   min-height: calc(100dvh - var(--site-header-height));
@@ -375,54 +571,23 @@ button.nk-btn:focus:not(:focus-visible) {
   width: 100%;
 }
 
-@media (min-width: 768px) {
-  .nk-dashboard-row {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 1.5rem;
-  }
-}
-
-.nk-dashboard-sidebar {
-  width: 100%;
-  flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-  .nk-dashboard-sidebar {
-    width: var(--sidebar-width);
-    position: sticky;
-    top: calc(var(--site-header-height) + 0.5rem);
-    align-self: flex-start;
-    max-height: calc(100dvh - var(--site-header-height) - 1rem);
-    overflow-y: auto;
-  }
-}
-
-.nk-dashboard-sidebar-panel {
-  background: var(--sidebar-bg);
-  border: 1px solid var(--sidebar-border);
-  border-radius: var(--radius-card);
-  padding: 0.65rem;
-  box-shadow: var(--shadow-sm);
-}
-
 .nk-dashboard-main {
   flex: 1;
   min-width: 0;
+  width: 100%;
 }
 
 .nk-dashboard-canvas {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--dashboard-content-radius);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   padding: 1.15rem;
 }
 
 @media (min-width: 768px) {
   .nk-dashboard-canvas {
-    padding: 1.5rem;
+    padding: 1.65rem 1.75rem;
   }
 }
 
