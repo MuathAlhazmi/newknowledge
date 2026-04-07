@@ -89,6 +89,19 @@ export default async function AdminExamsPage({
         }
       />
 
+      <Card elevated interactive={false} className="p-5 md:p-6">
+        <h2 className="mb-1 text-base font-bold text-[var(--foreground)]">{ae.editorSectionTitle}</h2>
+        <p className="mb-4 text-xs text-[var(--text-muted)]">{ae.editorSectionHint}</p>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/admin/courses/${courseId}/exams/edit?type=PRE`} className="nk-btn nk-btn-primary text-sm">
+            {ae.editPreQuiz}
+          </Link>
+          <Link href={`/admin/courses/${courseId}/exams/edit?type=POST`} className="nk-btn nk-btn-secondary text-sm">
+            {ae.editPostQuiz}
+          </Link>
+        </div>
+      </Card>
+
       {config && (
         <Card elevated variant="highlight" interactive={false} className="p-5 md:p-6">
           <h2 className="mb-1 text-base font-bold text-[var(--primary-strong)]">معايير احتساب الدرجة</h2>

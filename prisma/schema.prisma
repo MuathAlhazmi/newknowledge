@@ -92,6 +92,8 @@ model Exam {
   questions        Question[]
   attempts         ExamAttempt[]
   createdAt        DateTime     @default(now())
+
+  @@unique([courseId, type])
 }
 
 model Question {
