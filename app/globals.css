@@ -105,6 +105,44 @@ textarea:focus-visible {
   box-shadow: var(--focus-ring);
 }
 
+input[type="checkbox"].nk-check,
+input[type="radio"].nk-radio {
+  width: 1.05rem;
+  height: 1.05rem;
+  min-width: 1.05rem;
+  padding: 0;
+  margin: 0;
+  border: 1.5px solid color-mix(in srgb, var(--primary-strong) 45%, var(--border));
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+input[type="checkbox"].nk-check {
+  border-radius: 0.34rem;
+  accent-color: var(--primary);
+}
+
+input[type="radio"].nk-radio {
+  border-radius: 999px;
+  accent-color: var(--primary);
+}
+
+input[type="checkbox"].nk-check:hover,
+input[type="radio"].nk-radio:hover {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent),
+    var(--shadow-sm);
+}
+
+input[type="checkbox"].nk-check:focus-visible,
+input[type="radio"].nk-radio:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
 button {
   cursor: pointer;
   transition:

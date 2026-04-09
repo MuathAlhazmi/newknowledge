@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { UserRole } from "@prisma/client";
-import { requireInstructor } from "@/lib/auth";
+import { canEditCourse, requireCourseAccess } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 import { AddEnrollmentForm } from "@/components/add-enrollment-form";
 import { arCopy } from "@/lib/copy/ar";
@@ -13,8 +13,9 @@ export default async function AdminEnrollmentsPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
+  const { membership } = await requireCourseAccess(courseId);
+  const canEdit = canEditCourse(membership.role);
 
   const [course, enrollments, candidates] = await Promise.all([
     db.course.findUnique({ where: { id: courseId }, select: { title: true } }),
@@ -52,7 +53,11 @@ export default async function AdminEnrollmentsPage({
           </div>
         }
       />
-      <AddEnrollmentForm courseId={courseId} candidates={candidates} />
+      {canEdit ? (
+        <AddEnrollmentForm courseId={courseId} candidates={candidates} />
+      ) : (
+        <p className="text-sm text-[var(--text-muted)]">صلاحيتك في هذه الدورة عرض فقط؛ لا يمكن إضافة متدربين أو اعتماد الطلبات.</p>
+      )}
       {enrollments.length === 0 ? (
         <EmptyState title={arCopy.adminEnrollments.emptyTitle} text={arCopy.adminEnrollments.emptyText} />
       ) : (
@@ -75,7 +80,7 @@ export default async function AdminEnrollmentsPage({
                     tone={enrollment.status === "APPROVED" ? "success" : "warning"}
                   />
                 </div>
-                {enrollment.status !== "APPROVED" && (
+                {canEdit && enrollment.status !== "APPROVED" && (
                   <form action={approveEnrollmentAction} className="mt-4 border-t border-[var(--border)] pt-4">
                     <input type="hidden" name="courseId" value={courseId} />
                     <input type="hidden" name="enrollmentId" value={enrollment.id} />

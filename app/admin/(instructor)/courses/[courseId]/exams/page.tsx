@@ -2,17 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ExamType } from "@prisma/client";
-import { requireInstructor } from "@/lib/auth";
+import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 import { recomputeCourseGrade } from "@/lib/guards";
 import { arCopy } from "@/lib/copy/ar";
+import { GradingCriteriaReadOnly } from "@/components/grade-display";
 import { Card, PageHeader, StatusBadge } from "@/components/ui";
 
 async function approvePostExamAction(formData: FormData) {
   "use server";
-  const staff = await requireInstructor();
   const courseId = String(formData.get("courseId"));
   const userId = String(formData.get("userId"));
+  const { user: staff } = await requireCourseEditor(courseId);
 
   await db.postExamApproval.upsert({
     where: { userId_courseId: { userId, courseId } },
@@ -24,8 +25,8 @@ async function approvePostExamAction(formData: FormData) {
 
 async function updateGradingConfigAction(formData: FormData) {
   "use server";
-  await requireInstructor();
   const courseId = String(formData.get("courseId"));
+  await requireCourseEditor(courseId);
   const preWeight = Number(formData.get("preWeight"));
   const postWeight = Number(formData.get("postWeight"));
   const passThreshold = Number(formData.get("passThreshold"));
@@ -49,8 +50,9 @@ export default async function AdminExamsPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
+  const { membership } = await requireCourseAccess(courseId);
+  const canEdit = canEditCourse(membership.role);
 
   const [course, config, preExam, participants] = await Promise.all([
     db.course.findUnique({ where: { id: courseId }, select: { title: true } }),
@@ -100,9 +102,12 @@ export default async function AdminExamsPage({
             {ae.editPostQuiz}
           </Link>
         </div>
+        {!canEdit ? (
+          <p className="text-xs text-[var(--text-muted)]">صلاحية عرض فقط — يمكنك معاينة الاختبار دون حفظ التغييرات.</p>
+        ) : null}
       </Card>
 
-      {config && (
+      {config && canEdit && (
         <Card elevated variant="highlight" interactive={false} className="p-5 md:p-6">
           <h2 className="mb-1 text-base font-bold text-[var(--primary-strong)]">معايير احتساب الدرجة</h2>
           <p className="mb-4 text-xs text-[var(--text-muted)]">{ae.configHelper}</p>
@@ -124,6 +129,14 @@ export default async function AdminExamsPage({
               {arCopy.buttons.save}
             </button>
           </form>
+        </Card>
+      )}
+
+      {config && !canEdit && (
+        <Card elevated interactive={false} className="p-5 md:p-6">
+          <h2 className="mb-1 text-base font-bold text-[var(--foreground)]">معايير احتساب الدرجة</h2>
+          <p className="mb-4 text-xs text-[var(--text-muted)]">{ae.configHelper}</p>
+          <GradingCriteriaReadOnly config={config} showHeading={false} />
         </Card>
       )}
 
@@ -150,17 +163,19 @@ export default async function AdminExamsPage({
                       <StatusBadge text={approved ? "معتمد" : "غير معتمد"} tone={approved ? "success" : "warning"} />
                     </div>
                   </div>
-                  <form action={approvePostExamAction} className="mt-4">
-                    <input type="hidden" name="courseId" value={courseId} />
-                    <input type="hidden" name="userId" value={user.id} />
-                    <button
-                      disabled={!preDone}
-                      type="submit"
-                      className="nk-btn nk-btn-secondary text-sm disabled:opacity-50"
-                    >
-                      السماح بالاختبار البعدي
-                    </button>
-                  </form>
+                  {canEdit ? (
+                    <form action={approvePostExamAction} className="mt-4">
+                      <input type="hidden" name="courseId" value={courseId} />
+                      <input type="hidden" name="userId" value={user.id} />
+                      <button
+                        disabled={!preDone}
+                        type="submit"
+                        className="nk-btn nk-btn-secondary text-sm disabled:opacity-50"
+                      >
+                        السماح بالاختبار البعدي
+                      </button>
+                    </form>
+                  ) : null}
                 </Card>
               </li>
             );

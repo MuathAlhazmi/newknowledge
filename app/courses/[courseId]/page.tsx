@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EnrollmentStatus } from "@prisma/client";
 import { requireParticipant } from "@/lib/auth";
+import { getCourseAnnouncements } from "@/lib/course-announcements";
 import { db } from "@/lib/db";
+import { CourseAnnouncementsList } from "@/components/course-announcements-list";
 import { CourseHeroCard } from "@/components/course-hero-card";
 import { CourseHubTile, type CourseHubTileIcon } from "@/components/course-hub-tile";
 import { WarningCard } from "@/components/ui";
@@ -35,6 +38,9 @@ export default async function CourseDetailsPage({
   if (!enrollment) notFound();
 
   const approved = enrollment.status === EnrollmentStatus.APPROVED;
+  const announcementPreview = approved
+    ? await getCourseAnnouncements(courseId, { limit: 4 })
+    : [];
 
   const learningTiles: TileDef[] = [
     {
@@ -58,6 +64,12 @@ export default async function CourseDetailsPage({
   ];
 
   const sessionTiles: TileDef[] = [
+    {
+      title: "الإعلانات",
+      description: "تحديثات الدورة والتنبيهات المهمة مرتبة زمنيًا.",
+      href: `/courses/${courseId}/announcements`,
+      icon: "announcements",
+    },
     {
       title: "جلسات Zoom",
       description: "روابط وتنظيم للجلسات الحضورية عن بُعد.",
@@ -108,6 +120,21 @@ export default async function CourseDetailsPage({
               />
             ))}
           </div>
+        </section>
+
+        <section className="nk-section !my-0">
+          <h2 className="nk-section-title">الإعلانات</h2>
+          <CourseAnnouncementsList
+            items={announcementPreview}
+            emptyText="لا توجد تحديثات منشورة في الوقت الحالي."
+          />
+          {approved ? (
+            <div className="mt-3">
+              <Link href={`/courses/${courseId}/announcements`} className="nk-btn nk-btn-secondary text-sm">
+                عرض كل الإعلانات
+              </Link>
+            </div>
+          ) : null}
         </section>
 
         <section className="nk-section !my-0">

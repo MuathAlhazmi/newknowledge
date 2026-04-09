@@ -24,6 +24,20 @@ enum ExamType {
   POST
 }
 
+/** صلاحيات العضو في فريق تدريس الدورة */
+enum CourseInstructorRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum AnnouncementKind {
+  MANUAL
+  CONTENT
+  QUIZ
+  ZOOM
+}
+
 model User {
   id                 String             @id @default(cuid())
   name               String
@@ -38,6 +52,8 @@ model User {
   feedbacks          Feedback[]
   postExamApprovals  PostExamApproval[]
   courseGrades       CourseGrade[]
+  courseInstructors  CourseInstructor[]
+  announcements      Announcement[]     @relation("AnnouncementAuthor")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   approvedPostExams  PostExamApproval[] @relation("ApprovedBy")
@@ -55,8 +71,39 @@ model Course {
   grades           CourseGrade[]
   postExamApprovals PostExamApproval[]
   gradingConfig    GradingConfig?
+  courseInstructors CourseInstructor[]
+  announcements     Announcement[]
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+}
+
+model Announcement {
+  id          String           @id @default(cuid())
+  courseId    String
+  createdById String
+  kind        AnnouncementKind @default(MANUAL)
+  title       String
+  body        String?
+  publishedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy   User             @relation("AnnouncementAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([courseId, publishedAt])
+  @@index([courseId, createdAt])
+}
+
+model CourseInstructor {
+  id        String                 @id @default(cuid())
+  courseId  String
+  userId    String
+  role      CourseInstructorRole     @default(EDITOR)
+  course    Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime               @default(now())
+
+  @@unique([courseId, userId])
 }
 
 model Enrollment {

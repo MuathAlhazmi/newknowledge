@@ -55,11 +55,11 @@ export function AddEnrollmentForm({
         <fieldset className="grid gap-2 text-sm">
           <legend className="font-medium">حالة التسجيل</legend>
           <label className="flex items-center gap-2">
-            <input type="radio" name="status" value="APPROVED" defaultChecked />
+            <input type="radio" name="status" value="APPROVED" defaultChecked className="nk-radio" />
             <span>اعتماد فوري (وصول كامل للمحتوى)</span>
           </label>
           <label className="flex items-center gap-2">
-            <input type="radio" name="status" value="PENDING" />
+            <input type="radio" name="status" value="PENDING" className="nk-radio" />
             <span>قيد اعتماد التسجيل (يمكنك اعتماد الطلب لاحقًا)</span>
           </label>
         </fieldset>

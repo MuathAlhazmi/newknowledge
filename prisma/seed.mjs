@@ -1,4 +1,10 @@
-import { PrismaClient, EnrollmentStatus, ExamType, UserRole } from "@prisma/client";
+import {
+  PrismaClient,
+  CourseInstructorRole,
+  EnrollmentStatus,
+  ExamType,
+  UserRole,
+} from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -73,6 +79,14 @@ async function main() {
       title: "أساسيات التعلم عبر المنصات (تجريبي)",
       description:
         "بيئة تدريب متكاملة لإدارة المحتوى، الاختبارات، والتواصل الرسمي — دورة تجريبية للعرض داخل المنصة؛ المحتوى توضيحي وليس برنامجًا تدريبيًا معتمدًا.",
+    },
+  });
+
+  await prisma.courseInstructor.create({
+    data: {
+      courseId: course.id,
+      userId: instructor.id,
+      role: CourseInstructorRole.OWNER,
     },
   });
 

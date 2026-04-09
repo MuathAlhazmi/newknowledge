@@ -1,4 +1,5 @@
 import { CourseSubNav } from "@/components/course-sub-nav";
+import { requireCourseAccess } from "@/lib/course-staff";
 
 export default async function InstructorCourseWorkspaceLayout({
   children,
@@ -8,6 +9,7 @@ export default async function InstructorCourseWorkspaceLayout({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
+  await requireCourseAccess(courseId);
   return (
     <>
       <CourseSubNav variant="instructor" courseId={courseId} />

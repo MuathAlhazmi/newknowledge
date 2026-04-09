@@ -1,12 +1,12 @@
 import { revalidatePath } from "next/cache";
-import { requireInstructor } from "@/lib/auth";
+import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 
 async function createZoomSessionAction(formData: FormData) {
   "use server";
-  await requireInstructor();
   const courseId = String(formData.get("courseId"));
+  await requireCourseEditor(courseId);
   const title = String(formData.get("title") ?? "").trim();
   const meetingUrl = String(formData.get("meetingUrl") ?? "").trim();
   const startsAt = String(formData.get("startsAt") ?? "");
@@ -23,8 +23,9 @@ export default async function AdminZoomPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
+  const { membership } = await requireCourseAccess(courseId);
+  const canEdit = canEditCourse(membership.role);
   const sessions = await db.zoomSession.findMany({
     where: { courseId },
     orderBy: { startsAt: "asc" },
@@ -33,17 +34,21 @@ export default async function AdminZoomPage({
   return (
     <div className="page-wrap gap-5">
       <PageHeader title="إدارة الجلسات المباشرة" subtitle="أضف الجلسات مع الموعد ورابط الانضمام." />
-      <Card elevated>
-        <form action={createZoomSessionAction} className="grid gap-2">
-          <input type="hidden" name="courseId" value={courseId} />
-          <input name="title" required placeholder="عنوان الجلسة" />
-          <input name="meetingUrl" required placeholder="رابط Zoom" />
-          <input name="startsAt" type="datetime-local" required />
-          <button type="submit" className="nk-btn nk-btn-primary w-fit">
-            إضافة جلسة جديدة
-          </button>
-        </form>
-      </Card>
+      {canEdit ? (
+        <Card elevated>
+          <form action={createZoomSessionAction} className="grid gap-2">
+            <input type="hidden" name="courseId" value={courseId} />
+            <input name="title" required placeholder="عنوان الجلسة" />
+            <input name="meetingUrl" required placeholder="رابط Zoom" />
+            <input name="startsAt" type="datetime-local" required />
+            <button type="submit" className="nk-btn nk-btn-primary w-fit">
+              إضافة جلسة جديدة
+            </button>
+          </form>
+        </Card>
+      ) : (
+        <p className="text-sm text-[var(--text-muted)]">صلاحية عرض فقط — لا يمكن إضافة جلسات.</p>
+      )}
       {sessions.length === 0 ? (
         <EmptyState text="لا توجد جلسات مجدولة حاليًا." />
       ) : (

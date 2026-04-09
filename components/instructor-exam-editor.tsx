@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
+  importExamFromSheetAction,
   saveGradedExamAction,
   type SaveExamState,
 } from "@/app/admin/(instructor)/courses/[courseId]/exam-actions";
@@ -9,6 +11,13 @@ import { arCopy } from "@/lib/copy/ar";
 import { Card } from "@/components/ui";
 import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
 import { useOnSerialChange } from "@/lib/use-on-serial-change";
+import {
+  mapRowsWithMapping,
+  parseExamImportFile,
+  suggestImportMapping,
+  type ImportColumnMapping,
+  type ParsedImportTable,
+} from "@/lib/exam-import-parser";
 
 function makeRowId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -18,12 +27,36 @@ function makeRowId(): string {
 
 type ChoiceRow = { id: string; text: string; isCorrect: boolean };
 type QuestionRow = { id: string; text: string; choices: ChoiceRow[] };
+type MappingField = keyof ImportColumnMapping;
 
-function defaultQuestion(): QuestionRow {
-  const c1 = makeRowId();
-  const c2 = makeRowId();
+const mappingFieldOrder: MappingField[] = [
+  "question",
+  "choice1",
+  "choice2",
+  "choice3",
+  "choice4",
+  "correct",
+  "order",
+];
+
+function emptyMapping(): ImportColumnMapping {
   return {
-    id: makeRowId(),
+    question: "",
+    choice1: "",
+    choice2: "",
+    choice3: "",
+    choice4: "",
+    correct: "",
+    order: "",
+  };
+}
+
+function defaultQuestion(seed?: string): QuestionRow {
+  const qid = seed ?? makeRowId();
+  const c1 = seed ? `${seed}-c-1` : makeRowId();
+  const c2 = seed ? `${seed}-c-2` : makeRowId();
+  return {
+    id: qid,
     text: "",
     choices: [
       { id: c1, text: "", isCorrect: true },
@@ -36,13 +69,13 @@ function rowsFromInitial(
   initial: InstructorExamEditorProps["initial"],
 ): QuestionRow[] {
   if (initial.questions.length === 0) {
-    return [defaultQuestion()];
+    return [defaultQuestion("init-q-1")];
   }
-  return initial.questions.map((q) => ({
-    id: makeRowId(),
+  return initial.questions.map((q, qi) => ({
+    id: `init-q-${qi + 1}`,
     text: q.text,
-    choices: q.choices.map((c) => ({
-      id: makeRowId(),
+    choices: q.choices.map((c, ci) => ({
+      id: `init-q-${qi + 1}-c-${ci + 1}`,
       text: c.text,
       isCorrect: c.isCorrect,
     })),
@@ -52,6 +85,7 @@ function rowsFromInitial(
 export type InstructorExamEditorProps = {
   courseId: string;
   examType: "PRE" | "POST";
+  canEdit?: boolean;
   initial: {
     title: string;
     durationMinutes: number;
@@ -60,7 +94,8 @@ export type InstructorExamEditorProps = {
   };
 };
 
-export function InstructorExamEditor({ courseId, examType, initial }: InstructorExamEditorProps) {
+export function InstructorExamEditor({ courseId, examType, initial, canEdit = true }: InstructorExamEditorProps) {
+  const router = useRouter();
   const ae = arCopy.adminExams;
   const [title, setTitle] = useState(initial.title);
   const [durationMinutes, setDurationMinutes] = useState(String(initial.durationMinutes));
@@ -68,6 +103,13 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
   const [questions, setQuestions] = useState<QuestionRow[]>(() => rowsFromInitial(initial));
   const [state, setState] = useState<SaveExamState>(null);
   const [isPending, startTransition] = useTransition();
+  const [importTable, setImportTable] = useState<ParsedImportTable | null>(null);
+  const [mapping, setMapping] = useState<ImportColumnMapping>(() => emptyMapping());
+  const [importPreview, setImportPreview] = useState<
+    { questionText: string; choices: [string, string, string, string]; correctRaw: string; orderRaw: string }[]
+  >([]);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importPending, startImportTransition] = useTransition();
 
   useOnSerialChange(JSON.stringify(state ?? null), () => {
     if (!state) return;
@@ -145,8 +187,77 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
     );
   }
 
+  function recalcPreview(table: ParsedImportTable, nextMapping: ImportColumnMapping) {
+    const mapped = mapRowsWithMapping(table.rows, nextMapping);
+    setImportPreview(mapped.slice(0, 5));
+  }
+
+  async function handleImportFile(file: File | null) {
+    if (!file) {
+      setImportTable(null);
+      setMapping(emptyMapping());
+      setImportPreview([]);
+      return;
+    }
+    setImportLoading(true);
+    const parsed = await parseExamImportFile(file);
+    setImportLoading(false);
+    if (!parsed.ok) {
+      const ie = ae.import.errors;
+      const msg =
+        parsed.code === "empty_file"
+          ? ie.emptyFile
+          : parsed.code === "unsupported_type"
+            ? ie.unsupportedType
+            : parsed.code === "empty_sheet"
+              ? ie.emptySheet
+              : ie.parseFailed;
+      snackbarError(msg);
+      setImportTable(null);
+      setImportPreview([]);
+      setMapping(emptyMapping());
+      return;
+    }
+    const guessed = suggestImportMapping(parsed.table.headers);
+    setImportTable(parsed.table);
+    setMapping(guessed);
+    recalcPreview(parsed.table, guessed);
+    snackbarSuccess(ae.import.mappingTitle);
+  }
+
+  function setMappingField(field: MappingField, value: string) {
+    const next = { ...mapping, [field]: value };
+    setMapping(next);
+    if (importTable) recalcPreview(importTable, next);
+  }
+
+  function runImport() {
+    if (!importTable) return;
+    const mappedRows = mapRowsWithMapping(importTable.rows, mapping);
+    const fd = new FormData();
+    fd.set("courseId", courseId);
+    fd.set("examType", examType);
+    fd.set(
+      "payload",
+      JSON.stringify({
+        title: title.trim(),
+        durationMinutes: Number(durationMinutes),
+        isActive,
+        rows: mappedRows,
+      }),
+    );
+    startImportTransition(async () => {
+      const next = await importExamFromSheetAction(state, fd);
+      setState(next);
+      if (next?.ok === true) {
+        router.refresh();
+      }
+    });
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!canEdit) return;
     const dur = Number(durationMinutes);
     const payload = {
       title: title.trim(),
@@ -174,6 +285,10 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-6">
+      {!canEdit ? (
+        <p className="text-sm text-[var(--text-muted)]">صلاحية عرض فقط — التعديل والحفظ غير متاحين.</p>
+      ) : null}
+      <fieldset disabled={!canEdit} className="grid gap-6 [fieldset:disabled]:opacity-70">
       <Card elevated className="grid gap-4 p-5">
         <label className="grid gap-1 text-sm">
           <span className="font-medium text-[var(--foreground)]">{ae.examTitleLabel}</span>
@@ -201,10 +316,98 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
             type="checkbox"
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
-            className="h-4 w-4 rounded border-[var(--border)]"
+            className="nk-check"
           />
           <span className="font-medium text-[var(--foreground)]">{ae.activeLabel}</span>
         </label>
+      </Card>
+
+      <Card elevated className="grid gap-4 p-5">
+        <h2 className="text-base font-bold text-[var(--foreground)]">{ae.import.title}</h2>
+        <p className="text-xs text-[var(--text-muted)]">{ae.import.hint}</p>
+        <label className="grid gap-1 text-sm">
+          <span className="font-medium text-[var(--foreground)]">{ae.import.uploadLabel}</span>
+          <input
+            type="file"
+            accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+            className="max-w-xl"
+            onChange={(e) => void handleImportFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+        <p className="text-xs text-[var(--text-muted)]">{ae.import.sampleColumnsHint}</p>
+        {importLoading ? (
+          <p className="text-xs text-[var(--text-muted)]">{ae.import.importing}</p>
+        ) : null}
+
+        {importTable ? (
+          <div className="grid gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)]/30 p-3">
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">{ae.import.mappingTitle}</h3>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {mappingFieldOrder.map((field) => (
+                <label key={field} className="grid gap-1 text-xs">
+                  <span className="font-medium text-[var(--foreground)]">
+                    {ae.import.fields[field]}
+                  </span>
+                  <select
+                    value={mapping[field]}
+                    onChange={(e) => setMappingField(field, e.target.value)}
+                    className="rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1.5"
+                  >
+                    <option value="">—</option>
+                    {importTable.headers.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">{ae.import.previewTitle}</h3>
+            {importPreview.length === 0 ? (
+              <p className="text-xs text-[var(--text-muted)]">{ae.import.noMappingYet}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[38rem] text-xs">
+                  <thead>
+                    <tr className="border-b border-[var(--border)] text-start">
+                      <th className="py-1 pe-2">{ae.import.fields.question}</th>
+                      <th className="py-1 pe-2">{ae.import.fields.choice1}</th>
+                      <th className="py-1 pe-2">{ae.import.fields.choice2}</th>
+                      <th className="py-1 pe-2">{ae.import.fields.choice3}</th>
+                      <th className="py-1 pe-2">{ae.import.fields.choice4}</th>
+                      <th className="py-1 pe-2">{ae.import.fields.correct}</th>
+                      <th className="py-1">{ae.import.fields.order}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importPreview.map((r, i) => (
+                      <tr key={i} className="border-b border-[var(--border-muted-edge)]">
+                        <td className="py-1 pe-2">{r.questionText}</td>
+                        <td className="py-1 pe-2">{r.choices[0]}</td>
+                        <td className="py-1 pe-2">{r.choices[1]}</td>
+                        <td className="py-1 pe-2">{r.choices[2]}</td>
+                        <td className="py-1 pe-2">{r.choices[3]}</td>
+                        <td className="py-1 pe-2">{r.correctRaw}</td>
+                        <td className="py-1">{r.orderRaw}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="nk-btn nk-btn-secondary w-fit"
+              onClick={runImport}
+              disabled={importPending || !mapping.question || !mapping.choice1 || !mapping.choice2 || !mapping.correct}
+            >
+              {importPending ? ae.import.importing : ae.import.importButton}
+            </button>
+          </div>
+        ) : null}
       </Card>
 
       <div className="grid gap-4">
@@ -241,10 +444,10 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
                     <label className="flex shrink-0 items-center gap-2 text-sm">
                       <input
                         type="radio"
-                        name={`correct-${q.id}`}
+                        name={`correct-${qi}`}
                         checked={c.isCorrect}
                         onChange={() => setCorrectAnswer(q.id, c.id)}
-                        className="h-4 w-4"
+                        className="nk-radio"
                       />
                       <span className="text-[var(--text-muted)]">{ae.correctLabel}</span>
                     </label>
@@ -276,9 +479,12 @@ export function InstructorExamEditor({ courseId, examType, initial }: Instructor
         </button>
       </div>
 
-      <button type="submit" className="nk-btn nk-btn-primary w-fit" disabled={isPending}>
-        {isPending ? ae.savingQuiz : ae.saveQuiz}
-      </button>
+      {canEdit ? (
+        <button type="submit" className="nk-btn nk-btn-primary w-fit" disabled={isPending}>
+          {isPending ? ae.savingQuiz : ae.saveQuiz}
+        </button>
+      ) : null}
+      </fieldset>
     </form>
   );
 }

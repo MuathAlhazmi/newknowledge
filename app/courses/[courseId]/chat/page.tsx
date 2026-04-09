@@ -40,7 +40,7 @@ async function sendMessageAction(
     return { ok: false, message: "لا يمكن المراسلة قبل اعتماد التسجيل.", submittedAt: Date.now() };
   }
 
-  const staffIds = await getCourseChatStaffIds();
+  const staffIds = await getCourseChatStaffIds(courseId);
   const inboxStaffId = staffIds[0];
   if (!inboxStaffId) {
     return { ok: false, message: "لا يوجد حساب إداري أو مدرب متاح حاليًا.", submittedAt: Date.now() };
@@ -69,7 +69,7 @@ export default async function ChatPage({
   const approved = await requireApprovedEnrollment(user.id, courseId);
   if (!approved) notFound();
 
-  const staffIds = await getCourseChatStaffIds();
+  const staffIds = await getCourseChatStaffIds(courseId);
   if (staffIds.length === 0) notFound();
 
   const [course, messages] = await Promise.all([

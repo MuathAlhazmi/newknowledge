@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireInstructor } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { arCopy } from "@/lib/copy/ar";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
@@ -10,7 +9,6 @@ export default async function AdminFeedbackPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
 
   const [course, feedbacks] = await Promise.all([

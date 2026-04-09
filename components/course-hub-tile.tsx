@@ -10,7 +10,8 @@ export type CourseHubTileIcon =
   | "zoom"
   | "chat"
   | "feedback"
-  | "enrollments";
+  | "enrollments"
+  | "announcements";
 
 function TileIcon({ name }: { name: CourseHubTileIcon }) {
   const common = "h-6 w-6";
@@ -82,6 +83,16 @@ function TileIcon({ name }: { name: CourseHubTileIcon }) {
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          />
+        </svg>
+      );
+    case "announcements":
+      return (
+        <svg className={common} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M10.34 3.94a2.25 2.25 0 013.32 0l.79.84a2.25 2.25 0 001.64.71h.75a2.25 2.25 0 012.25 2.25v4.01a2.25 2.25 0 00.35 1.2l.43.69a2.25 2.25 0 01-.96 3.29l-1.18.53a2.25 2.25 0 00-1.03 1.03l-.53 1.18a2.25 2.25 0 01-3.29.96l-.69-.43a2.25 2.25 0 00-1.2-.35H7.91a2.25 2.25 0 01-2.25-2.25v-.75a2.25 2.25 0 00-.71-1.64l-.84-.79a2.25 2.25 0 010-3.32l.84-.79a2.25 2.25 0 00.71-1.64v-.75a2.25 2.25 0 012.25-2.25h.75a2.25 2.25 0 001.64-.71l.79-.84zM9 12h6m-6 3h4m-4-6h6"
           />
         </svg>
       );

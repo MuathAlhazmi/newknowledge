@@ -41,18 +41,6 @@ export function HeaderRoleNav({
     );
   }
 
-  if (role === UserRole.INSTRUCTOR) {
-    return (
-      <ul className="m-0 flex min-w-0 list-none flex-wrap items-center justify-start gap-2 p-0 sm:gap-3 md:gap-4">
-        <li>
-          <HeaderNavLink href="/admin/courses" prefixMatch>
-            لوحة الدورات
-          </HeaderNavLink>
-        </li>
-      </ul>
-    );
-  }
-
   if (pendingParticipant) {
     return (
       <ul className="m-0 flex min-w-0 list-none flex-wrap items-center justify-start gap-2 p-0 sm:gap-3 md:gap-4">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ExamType } from "@prisma/client";
-import { requireInstructor } from "@/lib/auth";
+import { canEditCourse, requireCourseAccess } from "@/lib/course-staff";
 import { arCopy } from "@/lib/copy/ar";
 import { db } from "@/lib/db";
 import { InstructorExamEditor } from "@/components/instructor-exam-editor";
@@ -14,8 +14,9 @@ export default async function InstructorExamEditPage({
   params: Promise<{ courseId: string }>;
   searchParams: Promise<{ type?: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
+  const { membership } = await requireCourseAccess(courseId);
+  const canEdit = canEditCourse(membership.role);
   const { type: typeParam } = await searchParams;
   const raw = String(typeParam ?? "PRE").toUpperCase();
   if (raw !== "PRE" && raw !== "POST") notFound();
@@ -68,7 +69,7 @@ export default async function InstructorExamEditPage({
           </Link>
         }
       />
-      <InstructorExamEditor courseId={courseId} examType={examType} initial={initial} />
+      <InstructorExamEditor courseId={courseId} examType={examType} initial={initial} canEdit={canEdit} />
     </div>
   );
 }

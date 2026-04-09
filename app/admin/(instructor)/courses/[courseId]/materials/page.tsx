@@ -1,15 +1,17 @@
-import { requireInstructor } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { MaterialsAdminTable } from "@/components/materials-admin-table";
 import { PdfUploadForm } from "@/components/pdf-upload-form";
-import { Card, EmptyState, PageHeader } from "@/components/ui";
+import { canEditCourse, requireCourseAccess } from "@/lib/course-staff";
+import { EmptyState, PageHeader } from "@/components/ui";
 
 export default async function AdminMaterialsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
+  const { membership } = await requireCourseAccess(courseId);
+  const canEdit = canEditCourse(membership.role);
 
   const materials = await db.material.findMany({
     where: { courseId },
@@ -19,19 +21,13 @@ export default async function AdminMaterialsPage({
   return (
     <div className="page-wrap gap-5">
       <PageHeader title="مواد الدورة (PDF)" subtitle="ارفع المواد ونظّمها لعرضها مباشرة داخل المنصة." />
-      <PdfUploadForm courseId={courseId} />
-      {materials.length === 0 ? (
-        <EmptyState text="لم تتم إضافة مواد بعد." />
-      ) : (
-        <div className="nk-stagger-list grid gap-2">
-          {materials.map((material) => (
-            <Card key={material.id}>
-              <p className="font-medium">{material.title}</p>
-              <p className="text-xs text-[var(--text-muted)]">{material.pdfPath}</p>
-            </Card>
-          ))}
-        </div>
-      )}
+      <PdfUploadForm courseId={courseId} canEdit={canEdit} />
+      <MaterialsAdminTable
+        courseId={courseId}
+        materials={materials.map((m) => ({ id: m.id, title: m.title, pdfPath: m.pdfPath }))}
+        canEdit={canEdit}
+      />
+      {materials.length === 0 ? <EmptyState text="لم تتم إضافة مواد بعد." /> : null}
     </div>
   );
 }

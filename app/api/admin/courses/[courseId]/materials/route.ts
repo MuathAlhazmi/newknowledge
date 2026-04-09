@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireInstructor } from "@/lib/auth";
+import { requireCourseEditor } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ courseId: string }> },
 ) {
-  await requireInstructor();
   const { courseId } = await params;
+  await requireCourseEditor(courseId);
   const formData = await req.formData();
   const title = String(formData.get("title") ?? "").trim();
   const pdfPath = String(formData.get("pdfPath") ?? "").trim();

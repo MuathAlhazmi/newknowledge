@@ -3,7 +3,7 @@ import { Fragment } from "react";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { EnrollmentStatus } from "@prisma/client";
-import { requireInstructor } from "@/lib/auth";
+import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/course-staff";
 import { getCourseChatStaffIds } from "@/lib/chat-staff";
 import { db } from "@/lib/db";
 import { ChatComposerClient } from "@/components/chat-composer-client";
@@ -29,8 +29,8 @@ async function sendStaffMessageAction(
   formData: FormData,
 ): Promise<ChatActionState> {
   "use server";
-  const staff = await requireInstructor();
   const courseId = String(formData.get("courseId"));
+  const { user: staff } = await requireCourseEditor(courseId);
   const participantId = String(formData.get("participantId"));
   const text = String(formData.get("text") ?? "").trim();
   if (!participantId) {
@@ -67,9 +67,10 @@ export default async function InstructorChatPage({
   params: Promise<{ courseId: string }>;
   searchParams: Promise<{ participantId?: string }>;
 }) {
-  await requireInstructor();
   const { courseId } = await params;
   const qs = await searchParams;
+  const { membership } = await requireCourseAccess(courseId);
+  const canEdit = canEditCourse(membership.role);
 
   const [course, participants, staffIds] = await Promise.all([
     db.course.findUnique({ where: { id: courseId }, select: { title: true } }),
@@ -78,7 +79,7 @@ export default async function InstructorChatPage({
       include: { user: true },
       orderBy: { user: { name: "asc" } },
     }),
-    getCourseChatStaffIds(),
+    getCourseChatStaffIds(courseId),
   ]);
 
   if (!course) notFound();
@@ -195,7 +196,7 @@ export default async function InstructorChatPage({
         </ChatScrollBody>
       </ChatThreadCard>
 
-      {participantId && staffIds.length > 0 ? (
+      {participantId && staffIds.length > 0 && canEdit ? (
         <ChatComposerCard>
           <ChatComposerClient
             action={sendStaffMessageAction}
@@ -213,6 +214,8 @@ export default async function InstructorChatPage({
             }
           />
         </ChatComposerCard>
+      ) : participantId && staffIds.length > 0 && !canEdit ? (
+        <p className="text-sm text-[var(--text-muted)]">صلاحية عرض فقط — لا يمكن إرسال رسائل جديدة إلى المتدربين.</p>
       ) : null}
     </div>
   );

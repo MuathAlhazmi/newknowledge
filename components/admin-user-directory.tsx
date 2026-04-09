@@ -138,7 +138,7 @@ function EditUserDialog({
                 type="checkbox"
                 name="platformApproved"
                 defaultChecked={user.platformApproved}
-                className="rounded border-[var(--border)]"
+                className="nk-check"
               />
               <span>{arCopy.adminUserHub.platformApprovedLabel}</span>
             </label>
