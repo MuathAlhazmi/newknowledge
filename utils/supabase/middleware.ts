@@ -34,7 +34,12 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: getUserError,
   } = await supabase.auth.getUser();
+
+  if (getUserError?.code === "refresh_token_not_found") {
+    await supabase.auth.signOut();
+  }
 
   const path = request.nextUrl.pathname;
   if (!user && (path.startsWith("/admin") || path.startsWith("/courses"))) {
