@@ -38,6 +38,28 @@ enum AnnouncementKind {
   ZOOM
 }
 
+enum CompletionMethod {
+  AUTO
+  ADMIN
+}
+
+enum QuestionKind {
+  MCQ
+  SHORT_ANSWER
+}
+
+enum ExamAttemptStatus {
+  DRAFT
+  PENDING_MANUAL
+  COMPLETE
+}
+
+enum ShowSolutionsAfter {
+  NEVER
+  AFTER_SUBMIT
+  AFTER_ATTEMPT_END
+}
+
 model User {
   id                 String             @id @default(cuid())
   name               String
@@ -57,6 +79,8 @@ model User {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   approvedPostExams  PostExamApproval[] @relation("ApprovedBy")
+  materialProgress   MaterialProgress[]
+  courseCompletions  CourseCompletion[]
 }
 
 model Course {
@@ -73,6 +97,7 @@ model Course {
   gradingConfig    GradingConfig?
   courseInstructors CourseInstructor[]
   announcements     Announcement[]
+  courseCompletions CourseCompletion[]
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 }
@@ -125,30 +150,67 @@ model Material {
   title       String
   pdfPath     String
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    MaterialProgress[]
   createdAt   DateTime @default(now())
 }
 
+model MaterialProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  materialId    String
+  firstOpenedAt DateTime  @default(now())
+  completedAt   DateTime?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material      Material  @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, materialId])
+  @@index([userId, materialId])
+}
+
+model CourseCompletion {
+  id                String           @id @default(cuid())
+  userId            String
+  courseId          String
+  completedAt       DateTime         @default(now())
+  certificateNumber String           @unique
+  method            CompletionMethod @default(AUTO)
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course            Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
 model Exam {
-  id               String       @id @default(cuid())
-  courseId         String
-  type             ExamType
-  title            String
-  durationMinutes  Int
-  isActive         Boolean      @default(true)
-  course           Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  questions        Question[]
-  attempts         ExamAttempt[]
-  createdAt        DateTime     @default(now())
+  id                     String             @id @default(cuid())
+  courseId               String
+  type                   ExamType
+  title                  String
+  durationMinutes        Int
+  isActive               Boolean            @default(true)
+  shuffleQuestions       Boolean            @default(false)
+  shuffleChoices         Boolean            @default(false)
+  maxAttempts            Int?
+  reviewWindowMinutes    Int?
+  showSolutionsAfter     ShowSolutionsAfter @default(NEVER)
+  allowReviewWhileAttempt Boolean           @default(true)
+  course                 Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions              Question[]
+  attempts               ExamAttempt[]
+  createdAt              DateTime           @default(now())
 
   @@unique([courseId, type])
 }
 
 model Question {
-  id           String      @id @default(cuid())
+  id           String       @id @default(cuid())
   examId       String
   text         String
   order        Int
-  exam         Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  kind         QuestionKind @default(MCQ)
+  points       Int          @default(1)
+  rubric       String?
+  exam         Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
   choices      Choice[]
 }
 
@@ -161,15 +223,23 @@ model Choice {
 }
 
 model ExamAttempt {
-  id           String    @id @default(cuid())
-  userId       String
-  examId       String
-  startedAt    DateTime  @default(now())
-  submittedAt  DateTime?
-  score        Float?
-  answersJson  String?
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exam         Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  id                   String             @id @default(cuid())
+  userId               String
+  examId               String
+  attemptNumber        Int                @default(1)
+  status               ExamAttemptStatus  @default(DRAFT)
+  startedAt            DateTime           @default(now())
+  submittedAt          DateTime?
+  score                Float?
+  manualScore          Float?
+  shortAnswerScoresJson String?
+  answersJson          String?
+  shuffleSeed          String?
+  layoutJson           String?
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam                 Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([userId, examId])
 }
 
 model PostExamApproval {

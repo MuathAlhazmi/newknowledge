@@ -1,26 +1,12 @@
 import Link from "next/link";
-import { Fragment } from "react";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { requireParticipant } from "@/lib/auth";
 import { getCourseChatStaffIds } from "@/lib/chat-staff";
 import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
-import { ChatComposerClient } from "@/components/chat-composer-client";
 import type { ChatActionState } from "@/components/chat-types";
-import { LiveRefresh } from "@/components/live-refresh";
-import {
-  ChatBubble,
-  ChatComposerCard,
-  ChatDayDivider,
-  ChatScrollBody,
-  ChatThreadCard,
-  ChatThreadEmpty,
-  chatComposerFormClass,
-  formatChatDay,
-  formatChatTime,
-  sameCalendarDay,
-} from "@/components/course-chat-ui";
+import { LearnerChatSection } from "@/components/learner-chat-section";
 import { PageHeader } from "@/components/ui";
 
 async function sendMessageAction(
@@ -88,12 +74,21 @@ export default async function ChatPage({
 
   if (!course) notFound();
 
+  const initialMessages = messages.map((m) => ({
+    id: m.id,
+    courseId: m.courseId,
+    senderId: m.senderId,
+    receiverId: m.receiverId,
+    text: m.text,
+    createdAt: m.createdAt.toISOString(),
+  }));
+
   return (
     <div className="page-wrap gap-6">
       <PageHeader
         eyebrow="التواصل الرسمي"
         title="المحادثات مع فريق المنصة"
-        subtitle={`${course.title} · يُحدَّث تلقائيًا كل ثانيتين.`}
+        subtitle={`${course.title} · تحديث خفيف للرسائل الجديدة دون إعادة تحميل الصفحة بالكامل.`}
         actions={
           <Link href={`/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
             مركز الدورة
@@ -101,57 +96,12 @@ export default async function ChatPage({
         }
       />
 
-      <ChatThreadCard
-        header={
-          <div className="flex items-center justify-between gap-3">
-            <span>المحادثة مع فريق المنصة لهذه الدورة</span>
-            <LiveRefresh everyMs={2000} showStatus />
-          </div>
-        }
-        className="max-h-[min(52vh,28rem)]"
-      >
-        <ChatScrollBody scrollAreaId="learner-chat-scroll" messageCount={messages.length}>
-          {messages.length === 0 ? (
-            <ChatThreadEmpty
-              title="لا توجد رسائل بعد"
-              text="يرجى بدء المراسلة مع الإدارة. ستظهر الردود هنا فور وصولها."
-            />
-          ) : (
-            messages.map((m, i) => {
-              const mine = m.senderId === user.id;
-              const prev = messages[i - 1];
-              const d = new Date(m.createdAt);
-              const showDay =
-                !prev || !sameCalendarDay(new Date(prev.createdAt), d);
-              return (
-                <Fragment key={m.id}>
-                  {showDay ? <ChatDayDivider label={formatChatDay(d)} /> : null}
-                  <ChatBubble
-                    align={mine ? "end" : "start"}
-                    variant={mine ? "sent" : "received"}
-                    body={m.text}
-                    timeLabel={formatChatTime(d)}
-                    roleLabel={mine ? "أنت" : "الدعم"}
-                  />
-                </Fragment>
-              );
-            })
-          )}
-        </ChatScrollBody>
-      </ChatThreadCard>
-
-      <ChatComposerCard>
-        <ChatComposerClient
-          action={sendMessageAction}
-          className={chatComposerFormClass}
-          textareaId="chat-text"
-          textareaName="text"
-          label="رسالة جديدة"
-          placeholder="اكتب رسالتك هنا..."
-          submitLabel="إرسال"
-          hiddenFields={<input type="hidden" name="courseId" value={courseId} />}
-        />
-      </ChatComposerCard>
+      <LearnerChatSection
+        courseId={courseId}
+        userId={user.id}
+        initialMessages={initialMessages}
+        sendMessageAction={sendMessageAction}
+      />
     </div>
   );
 }

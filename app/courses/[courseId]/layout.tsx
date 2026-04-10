@@ -8,6 +8,7 @@ export default async function CourseWorkspaceLayout({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
+
   return (
     <>
       <CourseSubNav variant="participant" courseId={courseId} />

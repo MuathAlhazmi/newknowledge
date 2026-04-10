@@ -1,16 +1,14 @@
 "use client";
 
 import { useMemo, useState, useTransition, type FormEvent } from "react";
+import type { DisplayQuestion } from "@/lib/exam-draft";
 import { ExamTimer } from "@/components/exam-timer";
 import { Card, PageHeader, StatusBadge } from "@/components/ui";
 
-type Choice = { id: string; text: string };
-type Question = { id: string; text: string; order: number; choices: Choice[] };
-type ExamPayload = {
+type ExamHeader = {
   id: string;
   title: string;
   durationMinutes: number;
-  questions: Question[];
 };
 
 function scrollToQuestion(questionId: string) {
@@ -43,27 +41,40 @@ function BookmarkForReviewIcon({ filled }: { filled: boolean }) {
   );
 }
 
+function isAnswered(q: DisplayQuestion, answers: Record<string, string>): boolean {
+  const v = answers[q.id];
+  if (!v?.trim()) return false;
+  return true;
+}
+
 export function QuizAttemptShell({
   exam,
+  attemptId,
+  displayQuestions,
   courseId,
   startedAtISO,
   onSubmitAction,
   userName,
+  examPolicies,
 }: {
-  exam: ExamPayload;
+  exam: ExamHeader;
+  attemptId: string;
+  displayQuestions: DisplayQuestion[];
   courseId: string;
   startedAtISO: string;
   onSubmitAction: (formData: FormData) => Promise<void>;
   userName: string;
+  examPolicies: { allowReviewWhileAttempt: boolean; maxAttempts: number | null };
 }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [reviewFlags, setReviewFlags] = useState<Record<string, boolean>>({});
   const [isSubmitting, startSubmitTransition] = useTransition();
 
-  const totalQuestions = exam.questions.length;
+  const questions = displayQuestions;
+  const totalQuestions = questions.length;
   const answeredCount = useMemo(
-    () => exam.questions.filter((q) => Boolean(answers[q.id])).length,
-    [answers, exam.questions],
+    () => questions.filter((q) => isAnswered(q, answers)).length,
+    [answers, questions],
   );
   const progress = totalQuestions === 0 ? 0 : Math.round((answeredCount / totalQuestions) * 100);
   const isDemoExam = exam.title.includes("تجريب");
@@ -79,15 +90,26 @@ export function QuizAttemptShell({
     const fd = new FormData();
     fd.set("examId", exam.id);
     fd.set("courseId", courseId);
-    for (const q of exam.questions) {
-      const choiceId = answers[q.id];
-      if (choiceId) fd.set(`q_${q.id}`, choiceId);
+    fd.set("attemptId", attemptId);
+    for (const q of questions) {
+      if (q.kind === "MCQ") {
+        const choiceId = answers[q.id];
+        if (choiceId) fd.set(`q_${q.id}`, choiceId);
+      } else {
+        const t = answers[q.id];
+        if (t) fd.set(`sa_${q.id}`, t);
+      }
     }
 
     startSubmitTransition(() => {
       void onSubmitAction(fd);
     });
   }
+
+  const attemptsHint =
+    examPolicies.maxAttempts != null
+      ? `بحد أقصى ${examPolicies.maxAttempts} محاولة مكتملة لهذا الاختبار.`
+      : "المحاولات المكتملة غير محدودة ما لم يضبط المدرب حدًا.";
 
   return (
     <div className="page-wrap gap-5">
@@ -117,8 +139,8 @@ export function QuizAttemptShell({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {exam.questions.map((q, index) => {
-              const answered = Boolean(answers[q.id]);
+            {questions.map((q, index) => {
+              const answered = isAnswered(q, answers);
               const flagged = Boolean(reviewFlags[q.id]);
               return (
                 <button
@@ -138,8 +160,8 @@ export function QuizAttemptShell({
       </Card>
 
       <form onSubmit={handleSubmit} className="grid gap-4">
-        {exam.questions.map((q, index) => {
-          const answered = Boolean(answers[q.id]);
+        {questions.map((q, index) => {
+          const answered = isAnswered(q, answers);
           const flagged = Boolean(reviewFlags[q.id]);
           return (
             <Card key={q.id} className="scroll-mt-32" id={`question-${q.id}`}>
@@ -149,51 +171,69 @@ export function QuizAttemptShell({
                 </p>
                 <div className="flex items-center gap-2">
                   <StatusBadge text={answered ? "تمت الإجابة" : "بدون إجابة"} tone={answered ? "success" : "muted"} />
-                  <button
-                    type="button"
-                    onClick={() => toggleReviewFlag(q.id)}
-                    aria-pressed={flagged}
-                    aria-label={flagged ? "إلغاء الإشارة للمراجعة" : "إشارة للمراجعة"}
-                    title={flagged ? "إلغاء الإشارة للمراجعة" : "إشارة للمراجعة"}
-                    className={`nk-btn nk-btn-secondary inline-flex items-center justify-center !p-2 text-xs ${flagged ? "ring-2 ring-amber-300" : ""}`}
-                  >
-                    <BookmarkForReviewIcon filled={flagged} />
-                  </button>
+                  {examPolicies.allowReviewWhileAttempt ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleReviewFlag(q.id)}
+                      aria-pressed={flagged}
+                      aria-label={flagged ? "إلغاء الإشارة للمراجعة" : "إشارة للمراجعة"}
+                      title={flagged ? "إلغاء الإشارة للمراجعة" : "إشارة للمراجعة"}
+                      className={`nk-btn nk-btn-secondary inline-flex items-center justify-center !p-2 text-xs ${flagged ? "ring-2 ring-amber-300" : ""}`}
+                    >
+                      <BookmarkForReviewIcon filled={flagged} />
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="grid gap-2">
-                {q.choices.map((c) => {
-                  const selected = answers[q.id] === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: c.id }))}
-                      type="button"
-                      className={`grid grid-cols-[1fr_auto] items-start gap-3 rounded-xl border px-3 py-3 text-sm transition-all ${
-                        selected
-                          ? "border-[var(--primary)] bg-[var(--primary-soft)]"
-                          : "border-[var(--border)] bg-[var(--surface-muted)]"
-                      }`}
-                    >
-                      <span className="text-right leading-7">{c.text}</span>
-                      <span
-                        className={`mt-1 grid h-5 w-5 place-items-center justify-self-end rounded-full border-2 bg-white transition-all duration-200 ${
+              {q.kind === "MCQ" ? (
+                <div className="grid gap-2">
+                  {q.choices.map((c) => {
+                    const selected = answers[q.id] === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: c.id }))}
+                        type="button"
+                        className={`grid grid-cols-[1fr_auto] items-start gap-3 rounded-xl border px-3 py-3 text-sm transition-all ${
                           selected
-                            ? "border-[var(--primary)] shadow-[0_0_0_3px_rgba(52,89,230,0.14)]"
-                            : "border-[#94a3b8]"
+                            ? "border-[var(--primary)] bg-[var(--primary-soft)]"
+                            : "border-[var(--border)] bg-[var(--surface-muted)]"
                         }`}
                       >
+                        <span className="text-right leading-7">{c.text}</span>
                         <span
-                          className={`h-2.5 w-2.5 rounded-full bg-[var(--primary)] transition-all duration-200 ${
-                            selected ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                          className={`mt-1 grid h-5 w-5 place-items-center justify-self-end rounded-full border-2 bg-white transition-all duration-200 ${
+                            selected
+                              ? "border-[var(--primary)] shadow-[0_0_0_3px_rgba(52,89,230,0.14)]"
+                              : "border-[#94a3b8]"
                           }`}
-                        />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                        >
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full bg-[var(--primary)] transition-all duration-200 ${
+                              selected ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                            }`}
+                          />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {q.rubric ? (
+                    <p className="text-xs leading-relaxed text-[var(--text-muted)]">معايير التقييم: {q.rubric}</p>
+                  ) : null}
+                  <textarea
+                    rows={5}
+                    required
+                    value={answers[q.id] ?? ""}
+                    onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                    className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                    placeholder="اكتب إجابتك هنا..."
+                  />
+                </div>
+              )}
             </Card>
           );
         })}
@@ -201,7 +241,7 @@ export function QuizAttemptShell({
         <button
           type="submit"
           disabled={answeredCount !== totalQuestions || totalQuestions === 0 || isSubmitting}
-          className="nk-btn nk-btn-primary w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+          className="nk-btn nk-btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "جارٍ التسليم..." : "تسليم الاختبار"}
         </button>
@@ -210,7 +250,7 @@ export function QuizAttemptShell({
         ) : null}
       </form>
 
-      <p className="text-xs text-zinc-500">عدد المحاولات متاح بدون حد في النسخة الحالية.</p>
+      <p className="text-xs text-zinc-500">{attemptsHint}</p>
       <p className="text-xs text-zinc-500">أنت مسجل باسم: {userName}</p>
     </div>
   );

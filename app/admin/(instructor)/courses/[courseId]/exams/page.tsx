@@ -101,6 +101,9 @@ export default async function AdminExamsPage({
           <Link href={`/admin/courses/${courseId}/exams/edit?type=POST`} className="nk-btn nk-btn-secondary text-sm">
             {ae.editPostQuiz}
           </Link>
+          <Link href={`/admin/courses/${courseId}/exams/grading`} className="nk-btn nk-btn-secondary text-sm">
+            طابور التصحيح (إجابات قصيرة)
+          </Link>
         </div>
         {!canEdit ? (
           <p className="text-xs text-[var(--text-muted)]">صلاحية عرض فقط — يمكنك معاينة الاختبار دون حفظ التغييرات.</p>

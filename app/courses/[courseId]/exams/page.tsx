@@ -8,11 +8,14 @@ import { Card, PageHeader, WarningCard } from "@/components/ui";
 
 export default async function ExamsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const user = await requireParticipant();
   const { courseId } = await params;
+  const qs = await searchParams;
   const approved = await requireApprovedEnrollment(user.id, courseId);
   if (!approved) notFound();
 
@@ -25,6 +28,9 @@ export default async function ExamsPage({
   return (
     <div className="page-wrap gap-5">
       <PageHeader title="الاختبارات" subtitle="اختبارات قبلية وبعدية بمدة زمنية محددة." />
+      {qs.error === "max_attempts" ? (
+        <WarningCard>لقد استنفدت المحاولات المسموحة لهذا الاختبار. تواصل مع المدرب إن احتجت محاولة إضافية.</WarningCard>
+      ) : null}
       {exams.map((exam) => {
         const blocked = exam.type === ExamType.POST && !postUnlocked;
         const examTypeLabel = exam.type === ExamType.PRE ? "اختبار قبلي" : "اختبار بعدي";

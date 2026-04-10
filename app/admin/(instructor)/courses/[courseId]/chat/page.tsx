@@ -1,27 +1,18 @@
 import Link from "next/link";
-import { Fragment } from "react";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { EnrollmentStatus } from "@prisma/client";
 import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/course-staff";
 import { getCourseChatStaffIds } from "@/lib/chat-staff";
 import { db } from "@/lib/db";
-import { ChatComposerClient } from "@/components/chat-composer-client";
 import type { ChatActionState } from "@/components/chat-types";
+import { AdminChatSection } from "@/components/admin-chat-section";
 import {
-  ChatBubble,
-  ChatComposerCard,
-  ChatDayDivider,
   ChatScrollBody,
   ChatThreadCard,
   ChatThreadEmpty,
-  chatComposerFormClass,
-  formatChatDay,
-  formatChatTime,
   ParticipantPillLink,
-  sameCalendarDay,
 } from "@/components/course-chat-ui";
-import { LiveRefresh } from "@/components/live-refresh";
 import { PageHeader } from "@/components/ui";
 
 async function sendStaffMessageAction(
@@ -69,7 +60,7 @@ export default async function InstructorChatPage({
 }) {
   const { courseId } = await params;
   const qs = await searchParams;
-  const { membership } = await requireCourseAccess(courseId);
+  const { user, membership } = await requireCourseAccess(courseId);
   const canEdit = canEditCourse(membership.role);
 
   const [course, participants, staffIds] = await Promise.all([
@@ -107,14 +98,22 @@ export default async function InstructorChatPage({
       : [];
 
   const stripParticipantLabel = selectedParticipant?.user.name ?? null;
-  const participantRoleLabel = stripParticipantLabel ?? "المتدرب";
+
+  const initialMessages = messages.map((m) => ({
+    id: m.id,
+    courseId: m.courseId,
+    senderId: m.senderId,
+    receiverId: m.receiverId,
+    text: m.text,
+    createdAt: m.createdAt.toISOString(),
+  }));
 
   return (
     <div className="page-wrap gap-6">
       <PageHeader
         eyebrow="التواصل الرسمي"
         title="المحادثات مع المتدربين"
-        subtitle={`${course.title} · اختر متدربًا لعرض المحادثة · يُحدَّث تلقائيًا كل ثانيتين.`}
+        subtitle={`${course.title} · اختر متدربًا لعرض المحادثة · تحديث خفيف للرسائل الجديدة.`}
         actions={
           <Link href={`/admin/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
             صفحة الدورة
@@ -139,84 +138,35 @@ export default async function InstructorChatPage({
         </div>
       </ChatThreadCard>
 
-      <ChatThreadCard
-        header={
-          <div className="flex items-center justify-between gap-3">
-            <span>
-              {!selectedParticipant
-                ? "لا يوجد متدرب محدد"
-                : staffIds.length === 0
-                  ? "لا يوجد حساب إداري أو مدرب في المنصة. لا يمكن عرض المحادثات."
-                  : stripParticipantLabel
-                    ? `سجل المحادثة مع ${stripParticipantLabel}`
-                    : "سجل المحادثة مع المتدرب المحدد"}
-            </span>
-            <LiveRefresh everyMs={2000} showStatus />
-          </div>
-        }
-        className="max-h-[min(52vh,28rem)]"
-      >
-        <ChatScrollBody scrollAreaId="admin-chat-scroll" messageCount={messages.length}>
-          {!selectedParticipant ? (
+      {!selectedParticipant ? (
+        <ChatThreadCard header="لا يوجد متدرب محدد" className="max-h-[min(52vh,28rem)]">
+          <ChatScrollBody scrollAreaId="admin-chat-empty-participant" messageCount={0}>
             <ChatThreadEmpty
               title="لا متدرب للعرض"
               text="سيظهر هنا المحادثة عند وجود متدربين معتمدين. اختر اسمهم من القائمة أعلاه."
             />
-          ) : staffIds.length === 0 ? (
+          </ChatScrollBody>
+        </ChatThreadCard>
+      ) : staffIds.length === 0 ? (
+        <ChatThreadCard header="المحادثات غير متاحة" className="max-h-[min(52vh,28rem)]">
+          <ChatScrollBody scrollAreaId="admin-chat-empty-staff" messageCount={0}>
             <ChatThreadEmpty
               title="المحادثات غير متاحة"
               text="يجب وجود مستخدم بدور الإدارة أو التدريب في المنصة حتى تعمل المحادثات مع المتدربين."
             />
-          ) : messages.length === 0 ? (
-            <ChatThreadEmpty
-              title="لا توجد رسائل بعد"
-              text="لم تُسجَّل رسائل مع هذا المتدرب بعد. يمكنك بدء المحادثة من الأسفل."
-            />
-          ) : (
-            messages.map((m, i) => {
-              const fromParticipant = m.senderId === participantId;
-              const prev = messages[i - 1];
-              const d = new Date(m.createdAt);
-              const showDay =
-                !prev || !sameCalendarDay(new Date(prev.createdAt), d);
-              return (
-                <Fragment key={m.id}>
-                  {showDay ? <ChatDayDivider label={formatChatDay(d)} /> : null}
-                  <ChatBubble
-                    align={fromParticipant ? "start" : "end"}
-                    variant={fromParticipant ? "received" : "sent"}
-                    body={m.text}
-                    timeLabel={formatChatTime(d)}
-                    roleLabel={fromParticipant ? participantRoleLabel : "أنت"}
-                  />
-                </Fragment>
-              );
-            })
-          )}
-        </ChatScrollBody>
-      </ChatThreadCard>
-
-      {participantId && staffIds.length > 0 && canEdit ? (
-        <ChatComposerCard>
-          <ChatComposerClient
-            action={sendStaffMessageAction}
-            className={chatComposerFormClass}
-            textareaId="admin-chat-text"
-            textareaName="text"
-            label="رسالة جديدة"
-            placeholder={`رد إلى ${selectedParticipant?.user.name ?? "المتدرب"}...`}
-            submitLabel="إرسال"
-            hiddenFields={
-              <>
-                <input type="hidden" name="courseId" value={courseId} />
-                <input type="hidden" name="participantId" value={participantId} />
-              </>
-            }
-          />
-        </ChatComposerCard>
-      ) : participantId && staffIds.length > 0 && !canEdit ? (
-        <p className="text-sm text-[var(--text-muted)]">صلاحية عرض فقط — لا يمكن إرسال رسائل جديدة إلى المتدربين.</p>
-      ) : null}
+          </ChatScrollBody>
+        </ChatThreadCard>
+      ) : (
+        <AdminChatSection
+          courseId={courseId}
+          staffUserId={user.id}
+          participantId={participantId}
+          participantName={stripParticipantLabel ?? "المتدرب"}
+          initialMessages={initialMessages}
+          sendStaffMessageAction={sendStaffMessageAction}
+          canEdit={canEdit}
+        />
+      )}
     </div>
   );
 }

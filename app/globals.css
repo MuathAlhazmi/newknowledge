@@ -189,15 +189,19 @@ button {
   color: transparent;
 }
 
-/* Course workspace: pill strip inside a soft panel (matches header bar language) */
+/* Course workspace: shared muted panel (secondary nav + sticky search) */
+.nk-course-muted-panel,
 .nk-course-subnav {
-  margin-bottom: 1.25rem;
-  width: 100%;
-  overflow: visible;
   border-radius: var(--radius-card);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface-muted) 55%, var(--surface));
   box-shadow: var(--shadow-sm), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+}
+
+.nk-course-subnav {
+  margin-bottom: 1.25rem;
+  width: 100%;
+  overflow: visible;
   padding: 0.55rem 0.7rem;
 }
 

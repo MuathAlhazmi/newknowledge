@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireParticipant } from "@/lib/auth";
+import { recordMaterialOpened } from "@/lib/course-progress";
 import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
 import { Card, PageHeader } from "@/components/ui";
@@ -18,6 +19,8 @@ export default async function MaterialViewerPage({
     where: { id: materialId, courseId },
   });
   if (!material) notFound();
+
+  await recordMaterialOpened(user.id, materialId, courseId);
 
   return (
     <div className="page-wrap gap-5">

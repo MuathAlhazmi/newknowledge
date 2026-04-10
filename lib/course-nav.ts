@@ -16,6 +16,7 @@ export function participantCourseNavItems(courseId: string): CourseNavItem[] {
     { href: `${base}/exams`, label: "الاختبارات", prefixMatch: true },
     { href: `${base}/grades`, label: "الدرجات", prefixMatch: true },
     { href: `${base}/zoom`, label: "جلسات Zoom", prefixMatch: true },
+    { href: `${base}/calendar`, label: "التقويم", prefixMatch: true },
     { href: `${base}/announcements`, label: "الإعلانات", prefixMatch: true },
     { href: `${base}/chat`, label: "المحادثة", prefixMatch: true },
     { href: `${base}/feedback`, label: "التغذية الراجعة", prefixMatch: true },

@@ -24,6 +24,7 @@ function SubmitButton({ label }: { label: string }) {
 
 export function ChatComposerClient({
   action,
+  onSendSuccess,
   className,
   textareaId,
   textareaName,
@@ -33,6 +34,7 @@ export function ChatComposerClient({
   hiddenFields,
 }: {
   action: (prev: ChatActionState, formData: FormData) => Promise<ChatActionState>;
+  onSendSuccess?: () => void;
   className: string;
   textareaId: string;
   textareaName: string;
@@ -53,8 +55,9 @@ export function ChatComposerClient({
   useEffect(() => {
     if (state.ok && state.submittedAt > 0) {
       formRef.current?.reset();
+      onSendSuccess?.();
     }
-  }, [state]);
+  }, [state, onSendSuccess]);
 
   return (
     <form ref={formRef} action={formAction} className="grid gap-2">

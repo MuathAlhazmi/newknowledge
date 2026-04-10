@@ -1,4 +1,4 @@
-import { EnrollmentStatus, ExamType } from "@prisma/client";
+import { EnrollmentStatus, ExamAttemptStatus, ExamType } from "@prisma/client";
 import { db } from "@/lib/db";
 
 export async function requireApprovedEnrollment(userId: string, courseId: string) {
@@ -40,13 +40,23 @@ export async function recomputeCourseGrade(userId: string, courseId: string) {
 
   const preAttempt = preExam
     ? await db.examAttempt.findFirst({
-        where: { userId, examId: preExam.id, submittedAt: { not: null } },
+        where: {
+          userId,
+          examId: preExam.id,
+          submittedAt: { not: null },
+          status: ExamAttemptStatus.COMPLETE,
+        },
         orderBy: { submittedAt: "desc" },
       })
     : null;
   const postAttempt = postExam
     ? await db.examAttempt.findFirst({
-        where: { userId, examId: postExam.id, submittedAt: { not: null } },
+        where: {
+          userId,
+          examId: postExam.id,
+          submittedAt: { not: null },
+          status: ExamAttemptStatus.COMPLETE,
+        },
         orderBy: { submittedAt: "desc" },
       })
     : null;

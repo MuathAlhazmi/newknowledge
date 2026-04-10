@@ -48,6 +48,9 @@ export default async function InstructorExamEditPage({
     questions:
       exam?.questions.map((q) => ({
         text: q.text,
+        kind: q.kind === "SHORT_ANSWER" ? ("SHORT_ANSWER" as const) : ("MCQ" as const),
+        points: q.points,
+        rubric: q.rubric,
         choices: q.choices.map((c) => ({
           text: c.text,
           isCorrect: c.isCorrect,

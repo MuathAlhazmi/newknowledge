@@ -14,9 +14,17 @@ export function LiveRefresh({
 }) {
   const router = useRouter();
   const [isPaused, setIsPaused] = useState(false);
-  const [lastRefreshAt, setLastRefreshAt] = useState<number>(Date.now());
+  const [lastRefreshAt, setLastRefreshAt] = useState<number>(0);
+  const [nowMs, setNowMs] = useState(0);
 
   useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    queueMicrotask(() => setNowMs(Date.now()));
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => setLastRefreshAt(Date.now()));
     const tick = () => {
       if (document.visibilityState !== "visible") {
         setIsPaused(true);
@@ -47,10 +55,11 @@ export function LiveRefresh({
 
   const statusLabel = useMemo(() => {
     if (isPaused) return "التحديث التلقائي متوقف (النافذة بالخلفية)";
-    const secondsAgo = Math.max(0, Math.floor((Date.now() - lastRefreshAt) / 1000));
+    if (lastRefreshAt === 0) return "آخر تحديث: الآن";
+    const secondsAgo = Math.max(0, Math.floor((nowMs - lastRefreshAt) / 1000));
     if (secondsAgo <= 2) return "آخر تحديث: الآن";
     return `آخر تحديث: منذ ${secondsAgo} ث`;
-  }, [isPaused, lastRefreshAt]);
+  }, [isPaused, lastRefreshAt, nowMs]);
 
   if (!showStatus) return null;
 

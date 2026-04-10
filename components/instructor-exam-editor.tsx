@@ -26,7 +26,14 @@ function makeRowId(): string {
 }
 
 type ChoiceRow = { id: string; text: string; isCorrect: boolean };
-type QuestionRow = { id: string; text: string; choices: ChoiceRow[] };
+type QuestionRow = {
+  id: string;
+  kind: "MCQ" | "SHORT_ANSWER";
+  text: string;
+  points: number;
+  rubric: string;
+  choices: ChoiceRow[];
+};
 type MappingField = keyof ImportColumnMapping;
 
 const mappingFieldOrder: MappingField[] = [
@@ -57,7 +64,10 @@ function defaultQuestion(seed?: string): QuestionRow {
   const c2 = seed ? `${seed}-c-2` : makeRowId();
   return {
     id: qid,
+    kind: "MCQ",
     text: "",
+    points: 1,
+    rubric: "",
     choices: [
       { id: c1, text: "", isCorrect: true },
       { id: c2, text: "", isCorrect: false },
@@ -71,15 +81,31 @@ function rowsFromInitial(
   if (initial.questions.length === 0) {
     return [defaultQuestion("init-q-1")];
   }
-  return initial.questions.map((q, qi) => ({
-    id: `init-q-${qi + 1}`,
-    text: q.text,
-    choices: q.choices.map((c, ci) => ({
-      id: `init-q-${qi + 1}-c-${ci + 1}`,
-      text: c.text,
-      isCorrect: c.isCorrect,
-    })),
-  }));
+  return initial.questions.map((q, qi) => {
+    const kind = q.kind === "SHORT_ANSWER" ? "SHORT_ANSWER" : "MCQ";
+    const mappedChoices =
+      kind === "MCQ"
+        ? q.choices.map((c, ci) => ({
+            id: `init-q-${qi + 1}-c-${ci + 1}`,
+            text: c.text,
+            isCorrect: c.isCorrect,
+          }))
+        : [];
+    const choices =
+      kind === "MCQ" && mappedChoices.length >= 2
+        ? mappedChoices
+        : kind === "MCQ"
+          ? defaultQuestion(`init-q-${qi + 1}`).choices
+          : [];
+    return {
+      id: `init-q-${qi + 1}`,
+      kind,
+      text: q.text,
+      points: q.points ?? 1,
+      rubric: q.rubric?.trim() ?? "",
+      choices,
+    };
+  });
 }
 
 export type InstructorExamEditorProps = {
@@ -90,7 +116,13 @@ export type InstructorExamEditorProps = {
     title: string;
     durationMinutes: number;
     isActive: boolean;
-    questions: { text: string; choices: { text: string; isCorrect: boolean }[] }[];
+    questions: {
+      text: string;
+      kind?: "MCQ" | "SHORT_ANSWER";
+      points?: number;
+      rubric?: string | null;
+      choices: { text: string; isCorrect: boolean }[];
+    }[];
   };
 };
 
@@ -172,6 +204,30 @@ export function InstructorExamEditor({ courseId, examType, initial, canEdit = tr
 
   function updateQuestionText(id: string, text: string) {
     setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, text } : q)));
+  }
+
+  function setQuestionKind(id: string, kind: "MCQ" | "SHORT_ANSWER") {
+    setQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id !== id) return q;
+        if (kind === "SHORT_ANSWER") {
+          return { ...q, kind: "SHORT_ANSWER", choices: [] };
+        }
+        const nextChoices =
+          q.choices.length >= 2
+            ? q.choices
+            : defaultQuestion().choices;
+        return { ...q, kind: "MCQ", choices: nextChoices };
+      }),
+    );
+  }
+
+  function updateQuestionPoints(id: string, points: number) {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, points } : q)));
+  }
+
+  function updateRubric(id: string, rubric: string) {
+    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, rubric } : q)));
   }
 
   function updateChoiceText(questionId: string, choiceId: string, text: string) {
@@ -263,13 +319,31 @@ export function InstructorExamEditor({ courseId, examType, initial, canEdit = tr
       title: title.trim(),
       durationMinutes: dur,
       isActive,
-      questions: questions.map((q) => ({
-        text: q.text.trim(),
-        choices: q.choices.map((c) => ({
-          text: c.text.trim(),
-          isCorrect: c.isCorrect,
-        })),
-      })),
+      shuffleQuestions: false,
+      shuffleChoices: false,
+      maxAttempts: null as number | null,
+      reviewWindowMinutes: null as number | null,
+      showSolutionsAfter: "NEVER" as const,
+      allowReviewWhileAttempt: true,
+      questions: questions.map((q) =>
+        q.kind === "SHORT_ANSWER"
+          ? {
+              kind: "SHORT_ANSWER" as const,
+              points: q.points,
+              text: q.text.trim(),
+              rubric: q.rubric.trim(),
+              choices: [],
+            }
+          : {
+              kind: "MCQ" as const,
+              points: q.points,
+              text: q.text.trim(),
+              choices: q.choices.map((c) => ({
+                text: c.text.trim(),
+                isCorrect: c.isCorrect,
+              })),
+            },
+      ),
     };
 
     const fd = new FormData();
@@ -427,51 +501,87 @@ export function InstructorExamEditor({ courseId, examType, initial, canEdit = tr
                 {ae.removeQuestion}
               </button>
             </div>
+            <div className="flex flex-wrap gap-3">
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium">نوع السؤال</span>
+                <select
+                  className="rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1.5"
+                  value={q.kind}
+                  onChange={(e) => setQuestionKind(q.id, e.target.value === "SHORT_ANSWER" ? "SHORT_ANSWER" : "MCQ")}
+                >
+                  <option value="MCQ">اختيار من متعدد</option>
+                  <option value="SHORT_ANSWER">إجابة قصيرة (تصحيح يدوي)</option>
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium">الدرجة</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="w-24 rounded-md border border-[var(--border)] bg-[var(--background)] px-2 py-1.5"
+                  value={q.points}
+                  onChange={(e) => updateQuestionPoints(q.id, Number(e.target.value) || 1)}
+                />
+              </label>
+            </div>
             <textarea
               className="min-h-[4rem] w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
               value={q.text}
               onChange={(e) => updateQuestionText(q.id, e.target.value)}
               required
             />
-            <div className="grid gap-2">
-              <span className="text-sm font-medium text-[var(--foreground)]">{ae.choicesTitle}</span>
-              <ul className="grid gap-3">
-                {q.choices.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex flex-col gap-2 rounded-md border border-[var(--border)] p-3 sm:flex-row sm:items-center sm:gap-3"
-                  >
-                    <label className="flex shrink-0 items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name={`correct-${qi}`}
-                        checked={c.isCorrect}
-                        onChange={() => setCorrectAnswer(q.id, c.id)}
-                        className="nk-radio"
-                      />
-                      <span className="text-[var(--text-muted)]">{ae.correctLabel}</span>
-                    </label>
-                    <input
-                      className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
-                      value={c.text}
-                      onChange={(e) => updateChoiceText(q.id, c.id, e.target.value)}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="nk-btn nk-btn-secondary shrink-0 text-xs disabled:opacity-50"
-                      onClick={() => removeChoice(q.id, c.id)}
-                      disabled={q.choices.length <= 2}
+            {q.kind === "SHORT_ANSWER" ? (
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-[var(--foreground)]">سلم التقييم / المعايير (للمصحح)</span>
+                <textarea
+                  className="min-h-[5rem] w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
+                  value={q.rubric}
+                  onChange={(e) => updateRubric(q.id, e.target.value)}
+                  required
+                />
+              </label>
+            ) : (
+              <div className="grid gap-2">
+                <span className="text-sm font-medium text-[var(--foreground)]">{ae.choicesTitle}</span>
+                <ul className="grid gap-3">
+                  {q.choices.map((c) => (
+                    <li
+                      key={c.id}
+                      className="flex flex-col gap-2 rounded-md border border-[var(--border)] p-3 sm:flex-row sm:items-center sm:gap-3"
                     >
-                      {ae.removeChoice}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <button type="button" className="nk-btn nk-btn-secondary w-fit text-xs" onClick={() => addChoice(q.id)}>
-                {ae.addChoice}
-              </button>
-            </div>
+                      <label className="flex shrink-0 items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name={`correct-${qi}`}
+                          checked={c.isCorrect}
+                          onChange={() => setCorrectAnswer(q.id, c.id)}
+                          className="nk-radio"
+                        />
+                        <span className="text-[var(--text-muted)]">{ae.correctLabel}</span>
+                      </label>
+                      <input
+                        className="min-w-0 flex-1 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)]"
+                        value={c.text}
+                        onChange={(e) => updateChoiceText(q.id, c.id, e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="nk-btn nk-btn-secondary shrink-0 text-xs disabled:opacity-50"
+                        onClick={() => removeChoice(q.id, c.id)}
+                        disabled={q.choices.length <= 2}
+                      >
+                        {ae.removeChoice}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="nk-btn nk-btn-secondary w-fit text-xs" onClick={() => addChoice(q.id)}>
+                  {ae.addChoice}
+                </button>
+              </div>
+            )}
           </Card>
         ))}
         <button type="button" className="nk-btn nk-btn-secondary w-fit text-sm" onClick={addQuestion}>

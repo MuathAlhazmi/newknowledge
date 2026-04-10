@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ExamType } from "@prisma/client";
+import { ExamType, QuestionKind, ShowSolutionsAfter } from "@prisma/client";
 import { z } from "zod";
 import { requireCourseEditor } from "@/lib/course-staff";
 import { arCopy } from "@/lib/copy/ar";
@@ -14,17 +14,30 @@ const choiceSchema = z.object({
 
 const questionSchema = z
   .object({
+    kind: z.enum(["MCQ", "SHORT_ANSWER"]).default("MCQ"),
     text: z.string().trim().min(1),
-    choices: z.array(choiceSchema).min(2).max(12),
+    points: z.coerce.number().int().min(1).max(100).default(1),
+    rubric: z.string().optional(),
+    choices: z.array(choiceSchema).default([]),
   })
   .superRefine((q, ctx) => {
-    const correct = q.choices.filter((c) => c.isCorrect).length;
-    if (correct !== 1) {
-      ctx.addIssue({
-        code: "custom",
-        message: "one_correct",
-        path: ["choices"],
-      });
+    if (q.kind === "MCQ") {
+      if (q.choices.length < 2 || q.choices.length > 12) {
+        ctx.addIssue({ code: "custom", message: "choices_count", path: ["choices"] });
+        return;
+      }
+      const correct = q.choices.filter((c) => c.isCorrect).length;
+      if (correct !== 1) {
+        ctx.addIssue({
+          code: "custom",
+          message: "one_correct",
+          path: ["choices"],
+        });
+      }
+    } else {
+      if (!q.rubric?.trim()) {
+        ctx.addIssue({ code: "custom", message: "rubric_required", path: ["rubric"] });
+      }
     }
   });
 
@@ -32,6 +45,12 @@ const payloadSchema = z.object({
   title: z.string().trim().min(1).max(300),
   durationMinutes: z.coerce.number().int().min(1).max(600),
   isActive: z.boolean(),
+  shuffleQuestions: z.boolean().default(false),
+  shuffleChoices: z.boolean().default(false),
+  maxAttempts: z.union([z.coerce.number().int().min(1).max(50), z.null()]).optional(),
+  reviewWindowMinutes: z.union([z.coerce.number().int().min(0).max(10080), z.null()]).optional(),
+  showSolutionsAfter: z.enum(["NEVER", "AFTER_SUBMIT", "AFTER_ATTEMPT_END"]).default("NEVER"),
+  allowReviewWhileAttempt: z.boolean().default(true),
   questions: z.array(questionSchema).min(1).max(80),
 });
 
@@ -135,7 +154,18 @@ export async function saveGradedExamAction(
     return { ok: false, error: errs.courseNotFound };
   }
 
-  const { title, durationMinutes, isActive, questions } = parsed.data;
+  const {
+    title,
+    durationMinutes,
+    isActive,
+    questions,
+    shuffleQuestions,
+    shuffleChoices,
+    maxAttempts,
+    reviewWindowMinutes,
+    showSolutionsAfter,
+    allowReviewWhileAttempt,
+  } = parsed.data;
 
   try {
     await db.$transaction(async (tx) => {
@@ -146,18 +176,27 @@ export async function saveGradedExamAction(
         where: { courseId, type },
         select: { id: true },
       });
+      const examData = {
+        title,
+        durationMinutes,
+        isActive,
+        shuffleQuestions,
+        shuffleChoices,
+        maxAttempts: maxAttempts ?? null,
+        reviewWindowMinutes: reviewWindowMinutes ?? null,
+        showSolutionsAfter: showSolutionsAfter as ShowSolutionsAfter,
+        allowReviewWhileAttempt,
+      };
       const exam = existing
         ? await tx.exam.update({
             where: { id: existing.id },
-            data: { title, durationMinutes, isActive },
+            data: examData,
           })
         : await tx.exam.create({
             data: {
               courseId,
               type,
-              title,
-              durationMinutes,
-              isActive,
+              ...examData,
             },
           });
 
@@ -165,17 +204,24 @@ export async function saveGradedExamAction(
 
       let order = 1;
       for (const q of questions) {
+        const kind = q.kind === "SHORT_ANSWER" ? QuestionKind.SHORT_ANSWER : QuestionKind.MCQ;
         await tx.question.create({
           data: {
             examId: exam.id,
             text: q.text,
             order: order++,
-            choices: {
-              create: q.choices.map((c) => ({
-                text: c.text,
-                isCorrect: c.isCorrect,
-              })),
-            },
+            kind,
+            points: q.points,
+            rubric: kind === QuestionKind.SHORT_ANSWER ? (q.rubric ?? "").trim() : null,
+            choices:
+              kind === QuestionKind.MCQ
+                ? {
+                    create: q.choices.map((c) => ({
+                      text: c.text,
+                      isCorrect: c.isCorrect,
+                    })),
+                  }
+                : undefined,
           },
         });
       }
