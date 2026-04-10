@@ -57,7 +57,7 @@ export function LearnerChatSection({
           textareaId="chat-text"
           textareaName="text"
           label="رسالة جديدة"
-          placeholder="اكتب رسالتك هنا..."
+          placeholder="اكتب رسالتك..."
           submitLabel="إرسال"
           hiddenFields={<input type="hidden" name="courseId" value={courseId} />}
         />
