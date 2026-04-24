@@ -10,14 +10,14 @@ export async function POST(
   await requireCourseEditor(courseId);
   const formData = await req.formData();
   const title = String(formData.get("title") ?? "").trim();
-  const pdfPath = String(formData.get("pdfPath") ?? "").trim();
+  const filePath = String(formData.get("filePath") ?? formData.get("pdfPath") ?? "").trim();
 
-  if (!title || !pdfPath) {
+  if (!title || !filePath) {
     return NextResponse.redirect(new URL(`/admin/courses/${courseId}/materials`, req.url));
   }
 
   await db.material.create({
-    data: { courseId, title, pdfPath },
+    data: { courseId, title, filePath },
   });
 
   return NextResponse.redirect(new URL(`/admin/courses/${courseId}/materials`, req.url));

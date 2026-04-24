@@ -4,7 +4,7 @@ import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { recomputeCourseGrade, requireApprovedEnrollment } from "@/lib/guards";
 import { FinalScoreBar, GradingCriteriaReadOnly, ScoreRow } from "@/components/grade-display";
-import { Card, PageHeader, StatusBadge } from "@/components/ui";
+import { Card, PageHeader, StatusBadge, WarningCard } from "@/components/ui";
 
 export default async function GradesPage({
   params,
@@ -18,15 +18,62 @@ export default async function GradesPage({
 
   await recomputeCourseGrade(user.id, courseId);
 
-  const [grade, config, course] = await Promise.all([
-    db.courseGrade.findUnique({
-      where: { courseId_userId: { courseId, userId: user.id } },
-    }),
+  let grade = await db.courseGrade.findUnique({
+    where: { courseId_userId: { courseId, userId: user.id } },
+  });
+  const [config, course] = await Promise.all([
     db.gradingConfig.findUnique({ where: { courseId } }),
     db.course.findUnique({ where: { id: courseId }, select: { title: true } }),
   ]);
 
-  if (!grade || !config || !course) notFound();
+  if (!course) notFound();
+
+  if (!config) {
+    return (
+      <div className="page-wrap gap-6">
+        <PageHeader
+          eyebrow="الدرجة العامة"
+          title="النتيجة النهائية"
+          subtitle={course.title}
+          actions={
+            <Link href={`/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
+              مركز الدورة
+            </Link>
+          }
+        />
+        <WarningCard>
+          لم تُضبط معايير التقييم لهذه الدورة بعد. ستظهر درجتك هنا بعد أن يضبط المدرب أوزان الاختبار القبلي والبعدي ودرجة الاجتياز من إدارة الدورة.
+        </WarningCard>
+      </div>
+    );
+  }
+
+  if (!grade) {
+    await recomputeCourseGrade(user.id, courseId);
+    grade = await db.courseGrade.findUnique({
+      where: { courseId_userId: { courseId, userId: user.id } },
+    });
+  }
+
+  if (!grade) {
+    return (
+      <div className="page-wrap gap-6">
+        <PageHeader
+          eyebrow="الدرجة العامة"
+          title="النتيجة النهائية"
+          subtitle={course.title}
+          actions={
+            <Link href={`/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
+              مركز الدورة
+            </Link>
+          }
+        />
+        <WarningCard>
+          تعذّر تحميل سجل الدرجة حاليًا. حاول تحديث الصفحة لاحقًا، وإن استمرّت المشكلة فتواصل مع الدعم.
+        </WarningCard>
+      </div>
+    );
+  }
 
   const final = grade.finalScore;
 

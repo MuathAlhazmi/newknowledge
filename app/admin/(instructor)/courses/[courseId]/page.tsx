@@ -1,7 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { CourseInstructorRole } from "@prisma/client";
+import { CourseInstructorRole, Prisma } from "@prisma/client";
+
+type HubTeamMember = {
+  userId: string;
+  name: string;
+  email: string;
+  role: CourseInstructorRole;
+};
 import { db } from "@/lib/db";
 import { CourseHeroCard } from "@/components/course-hero-card";
 import { CourseHubTile, type CourseHubTileIcon } from "@/components/course-hub-tile";
@@ -10,7 +17,7 @@ import {
   arCountExams,
   arCountFeedbackReplies,
   arCountMaterials,
-  arCountZoomSessions,
+  arCountTeamsSessions,
 } from "@/lib/copy/ar";
 import { CourseTeamPanel } from "@/components/course-team-panel";
 import { canManageCourseTeam, requireCourseAccess } from "@/lib/course-staff";
@@ -44,26 +51,34 @@ export default async function AdminCourseHubPage({
 
   const course = await db.course.findUnique({
     where: { id: courseId },
-    include: {
+    select: {
+      title: true,
+      description: true,
       _count: {
         select: {
           materials: true,
           exams: true,
           feedbacks: true,
-          zoomSessions: true,
           enrollments: true,
         },
-      },
-      courseInstructors: {
-        include: { user: { select: { name: true, email: true } } },
-        orderBy: [{ role: "asc" }, { createdAt: "asc" }],
       },
     },
   });
 
   if (!course) notFound();
 
-  const teamMembers = course.courseInstructors.map((row) => ({
+  const [teamRows, teamsCountRows] = await Promise.all([
+    db.courseInstructor.findMany({
+      where: { courseId },
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+    }),
+    db.$queryRaw<Array<{ count: bigint }>>(
+      Prisma.sql`SELECT COUNT(*)::bigint AS count FROM teams_sessions WHERE "courseId" = ${courseId}`,
+    ),
+  ]);
+
+  const teamMembers: HubTeamMember[] = teamRows.map((row) => ({
     userId: row.userId,
     name: row.user.name,
     email: row.user.email,
@@ -73,11 +88,12 @@ export default async function AdminCourseHubPage({
 
   const base = `/admin/courses/${courseId}`;
   const c = course._count;
+  const teamsCount = Number(teamsCountRows[0]?.count ?? 0);
 
   const learningTiles: TileDef[] = [
     {
-      title: "المحتوى (PDF)",
-      description: "رفع مواد PDF وتنظيمها لعرضها داخل المنصة دون مغادرة الواجهة التدريبية.",
+      title: "المحتوى",
+      description: "رفع مواد PDF أو Word وتنظيمها في مجلدات؛ عرض PDF داخل المنصة وتنزيل Word.",
       badges: <StatusBadge text={arCountMaterials(c.materials)} tone="info" />,
       href: `${base}/materials`,
       icon: "materials",
@@ -106,11 +122,11 @@ export default async function AdminCourseHubPage({
       icon: "enrollments",
     },
     {
-      title: "جلسات Zoom",
-      description: "روابط وتنظيم للجلسات الحضورية عن بُعد.",
-      badges: <StatusBadge text={arCountZoomSessions(c.zoomSessions)} tone="info" />,
-      href: `${base}/zoom`,
-      icon: "zoom",
+      title: "جلسات Teams",
+      description: "روابط وتنظيم لجلسات Microsoft Teams.",
+      badges: <StatusBadge text={arCountTeamsSessions(teamsCount)} tone="info" />,
+      href: `${base}/teams`,
+      icon: "teams",
     },
     {
       title: "الإعلانات",
@@ -207,7 +223,7 @@ export default async function AdminCourseHubPage({
               <div className="grid gap-3 text-sm leading-relaxed">
                 <p>
                   حذف الدورة نهائي ولا يمكن التراجع عنه. سيتم حذف جميع البيانات المرتبطة بهذه الدورة فقط:
-                  التسجيلات، المواد، الاختبارات، المحاولات، الدرجات، جلسات Zoom، المحادثات، التغذية الراجعة، والإعلانات.
+                  التسجيلات، المواد، الاختبارات، المحاولات، الدرجات، جلسات Teams، المحادثات، التغذية الراجعة، والإعلانات.
                 </p>
                 <p>
                   لن يتم حذف المستخدمين أو دوراتهم الأخرى. نوصي بأخذ نسخة احتياطية قبل التنفيذ.
@@ -216,7 +232,7 @@ export default async function AdminCourseHubPage({
                   <li>• المواد الحالية: {c.materials}</li>
                   <li>• الاختبارات الحالية: {c.exams}</li>
                   <li>• التسجيلات الحالية: {c.enrollments}</li>
-                  <li>• الجلسات الحالية: {c.zoomSessions}</li>
+                  <li>• الجلسات الحالية: {teamsCount}</li>
                   <li>• الملاحظات الحالية: {c.feedbacks}</li>
                 </ul>
               </div>

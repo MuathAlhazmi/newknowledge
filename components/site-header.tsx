@@ -43,7 +43,7 @@ export async function SiteHeader({
               className="nk-header-link nk-header-brand flex w-fit max-w-full shrink-0 items-center gap-2.5 self-start rounded-xl px-2 py-1.5 -mx-2 text-lg font-bold tracking-tight sm:self-auto md:gap-3 md:text-xl"
               aria-label={user ? "الرجوع إلى لوحة العمل" : "الصفحة الرئيسية"}
             >
-              <SiteLogo variant="header" />
+              <SiteLogo variant="header" priority />
               <span className="nk-brand-gradient-text hidden min-[380px]:inline">العلم الجديد</span>
             </Link>
             <nav

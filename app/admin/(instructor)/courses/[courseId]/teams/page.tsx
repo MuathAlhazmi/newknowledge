@@ -3,7 +3,7 @@ import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/c
 import { db } from "@/lib/db";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 
-async function createZoomSessionAction(formData: FormData) {
+async function createTeamsSessionAction(formData: FormData) {
   "use server";
   const courseId = String(formData.get("courseId"));
   await requireCourseEditor(courseId);
@@ -12,13 +12,13 @@ async function createZoomSessionAction(formData: FormData) {
   const startsAt = String(formData.get("startsAt") ?? "");
   if (!title || !meetingUrl || !startsAt) return;
 
-  await db.zoomSession.create({
+  await db.teamsSession.create({
     data: { courseId, title, meetingUrl, startsAt: new Date(startsAt) },
   });
-  revalidatePath(`/admin/courses/${courseId}/zoom`);
+  revalidatePath(`/admin/courses/${courseId}/teams`);
 }
 
-export default async function AdminZoomPage({
+export default async function AdminTeamsSessionsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
@@ -26,20 +26,20 @@ export default async function AdminZoomPage({
   const { courseId } = await params;
   const { membership } = await requireCourseAccess(courseId);
   const canEdit = canEditCourse(membership.role);
-  const sessions = await db.zoomSession.findMany({
+  const sessions = await db.teamsSession.findMany({
     where: { courseId },
     orderBy: { startsAt: "asc" },
   });
 
   return (
     <div className="page-wrap gap-5">
-      <PageHeader title="إدارة الجلسات المباشرة" subtitle="أضف الجلسات مع الموعد ورابط الانضمام." />
+      <PageHeader title="إدارة جلسات Teams" subtitle="أضف الجلسات مع الموعد ورابط الاجتماع في Microsoft Teams." />
       {canEdit ? (
         <Card elevated>
-          <form action={createZoomSessionAction} className="grid gap-2">
+          <form action={createTeamsSessionAction} className="grid gap-2">
             <input type="hidden" name="courseId" value={courseId} />
             <input name="title" required placeholder="عنوان الجلسة" />
-            <input name="meetingUrl" required placeholder="رابط Zoom" />
+            <input name="meetingUrl" required placeholder="رابط Teams" />
             <input name="startsAt" type="datetime-local" required />
             <button type="submit" className="nk-btn nk-btn-primary w-fit">
               إضافة جلسة جديدة

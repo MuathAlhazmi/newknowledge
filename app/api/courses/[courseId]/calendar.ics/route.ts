@@ -36,7 +36,7 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const sessions = await db.zoomSession.findMany({
+  const sessions = await db.teamsSession.findMany({
     where: { courseId },
     orderBy: { startsAt: "asc" },
   });

@@ -9,7 +9,7 @@ function parseKind(raw: string): AnnouncementKind {
   const u = raw.trim().toUpperCase();
   if (u === AnnouncementKind.CONTENT) return AnnouncementKind.CONTENT;
   if (u === AnnouncementKind.QUIZ) return AnnouncementKind.QUIZ;
-  if (u === AnnouncementKind.ZOOM) return AnnouncementKind.ZOOM;
+  if (u === AnnouncementKind.TEAMS) return AnnouncementKind.TEAMS;
   return AnnouncementKind.MANUAL;
 }
 

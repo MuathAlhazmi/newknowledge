@@ -35,7 +35,7 @@ export async function requireCourseAccess(courseId: string) {
   return { user, membership };
 }
 
-/** Materials, exams, enrollments, grading, chat replies, Zoom, etc. */
+/** Materials, exams, enrollments, grading, chat replies, Teams sessions, etc. */
 export async function requireCourseEditor(courseId: string) {
   const ctx = await requireCourseAccess(courseId);
   if (!canEditCourse(ctx.membership.role)) {

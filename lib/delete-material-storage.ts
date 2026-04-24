@@ -1,14 +1,15 @@
 import { unlink } from "node:fs/promises";
 import path from "node:path";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { parseSupabasePublicObjectUrl } from "@/lib/material-pdf-source";
+import { parseSupabaseStorageRef } from "@/lib/material-storage-ref";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
- * Best-effort removal of a stored PDF (local `public/uploads/materials/` or Supabase Storage public URL).
+ * Best-effort removal of a stored material file (local `public/uploads/materials/`, `supabase:...`, or legacy public URL).
  * Swallows errors so DB operations can still complete if cleanup fails.
  */
-export async function deleteStoredMaterialPdf(pdfPath: string): Promise<void> {
-  const p = pdfPath.trim();
+export async function deleteStoredMaterialFile(storagePath: string): Promise<void> {
+  const p = storagePath.trim();
   if (!p) return;
 
   const localPrefix = "/uploads/materials/";
@@ -26,6 +27,20 @@ export async function deleteStoredMaterialPdf(pdfPath: string): Promise<void> {
       if (code !== "ENOENT") {
         console.warn("[delete-material-storage] local unlink:", e);
       }
+    }
+    return;
+  }
+
+  const refParsed = parseSupabaseStorageRef(p);
+  if (refParsed && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    try {
+      const supabase = createSupabaseAdminClient();
+      const { error } = await supabase.storage.from(refParsed.bucket).remove([refParsed.objectPath]);
+      if (error) {
+        console.warn("[delete-material-storage] Supabase remove:", error.message);
+      }
+    } catch (e) {
+      console.warn("[delete-material-storage] Supabase remove failed:", e);
     }
     return;
   }

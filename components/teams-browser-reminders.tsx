@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export function ZoomBrowserReminders({
+export function TeamsBrowserReminders({
   sessions,
 }: {
   sessions: { id: string; title: string; startsAt: string }[];
@@ -30,7 +30,7 @@ export function ZoomBrowserReminders({
       if (delay > 0 && delay < 1000 * 60 * 60 * 24 * 14) {
         const id = window.setTimeout(() => {
           try {
-            new Notification(s.title, { body: "تبدأ الجلسة خلال حوالي 10 دقائق." });
+            new Notification(s.title, { body: "تبدأ جلسة Teams خلال حوالي 10 دقائق." });
           } catch {
             // ignore
           }
@@ -58,7 +58,9 @@ export function ZoomBrowserReminders({
           طلب إذن التنبيهات للجلسات القادمة
         </button>
       ) : (
-        <span className="text-xs text-emerald-800 dark:text-emerald-300">سيتم تنبيهك قبل الجلسات بـ 10 دقائق (في هذه الزيارة).</span>
+        <span className="text-xs text-emerald-800 dark:text-emerald-300">
+          سيتم تنبيهك قبل جلسات Teams بـ 10 دقائق (في هذه الزيارة).
+        </span>
       )}
     </div>
   );

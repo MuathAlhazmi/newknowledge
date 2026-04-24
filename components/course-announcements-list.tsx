@@ -9,8 +9,8 @@ function kindBadge(kind: AnnouncementKind): { text: string; tone: "info" | "mute
       return { text: "محتوى", tone: "info" };
     case AnnouncementKind.QUIZ:
       return { text: "اختبار", tone: "warning" };
-    case AnnouncementKind.ZOOM:
-      return { text: "Zoom", tone: "info" };
+    case AnnouncementKind.TEAMS:
+      return { text: "Teams", tone: "info" };
     default:
       return { text: "إعلان", tone: "muted" };
   }

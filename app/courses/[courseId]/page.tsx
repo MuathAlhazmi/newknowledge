@@ -46,8 +46,8 @@ export default async function CourseDetailsPage({
 
   const learningTiles: TileDef[] = [
     {
-      title: "المحتوى (PDF)",
-      description: "عرض ملفات PDF مباشرة دون مغادرة الواجهة التدريبية، مع إمكانية التحميل عند الحاجة.",
+      title: "المحتوى",
+      description: "عرض PDF داخل المنصة وتنزيل مستندات Word، مع تنظيم داخل المجلدات.",
       href: `/courses/${courseId}/materials`,
       icon: "materials",
     },
@@ -73,16 +73,16 @@ export default async function CourseDetailsPage({
       icon: "announcements",
     },
     {
-      title: "جلسات Zoom",
-      description: "روابط وتنظيم للجلسات الحضورية عن بُعد.",
-      href: `/courses/${courseId}/zoom`,
-      icon: "zoom",
+      title: "جلسات Teams",
+      description: "روابط وتنظيم لجلسات Microsoft Teams.",
+      href: `/courses/${courseId}/teams`,
+      icon: "teams",
     },
     {
       title: "التقويم",
       description: "عرض الجلسات زمنيًا، وتصدير ICS وتنبيهات المتصفح.",
       href: `/courses/${courseId}/calendar`,
-      icon: "zoom",
+      icon: "teams",
     },
     {
       title: "المحادثة المباشرة",

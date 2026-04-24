@@ -33,7 +33,8 @@ async function main() {
   await prisma.question.deleteMany();
   await prisma.exam.deleteMany();
   await prisma.material.deleteMany();
-  await prisma.zoomSession.deleteMany();
+  await prisma.materialFolder.deleteMany();
+  await prisma.teamsSession.deleteMany();
   await prisma.courseGrade.deleteMany();
   await prisma.gradingConfig.deleteMany();
   await prisma.enrollment.deleteMany();
@@ -99,18 +100,18 @@ async function main() {
     },
   });
 
-  await prisma.zoomSession.createMany({
+  await prisma.teamsSession.createMany({
     data: [
       {
         courseId: course.id,
         title: "جلسة تعريفية بالمنصة (رابط تجريبي)",
-        meetingUrl: "https://zoom.us/j/demo-newknowledge",
+        meetingUrl: "https://teams.microsoft.com/l/meetup-join/demo-newknowledge",
         startsAt: new Date(Date.now() + 86400000),
       },
       {
         courseId: course.id,
         title: "جلسة أسئلة وإجابات (رابط تجريبي)",
-        meetingUrl: "https://zoom.us/j/demo-newknowledge-2",
+        meetingUrl: "https://teams.microsoft.com/l/meetup-join/demo-newknowledge-2",
         startsAt: new Date(Date.now() + 172800000),
       },
     ],

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
-import { ZoomBrowserReminders } from "@/components/zoom-browser-reminders";
+import { TeamsBrowserReminders } from "@/components/teams-browser-reminders";
 import { Card, PageHeader } from "@/components/ui";
 
 function sameCalendarDay(a: Date, b: Date): boolean {
@@ -30,7 +30,7 @@ export default async function CourseCalendarPage({
   });
   if (!course) notFound();
 
-  const sessions = await db.zoomSession.findMany({
+  const sessions = await db.teamsSession.findMany({
     where: { courseId },
     orderBy: { startsAt: "asc" },
   });
@@ -85,12 +85,12 @@ export default async function CourseCalendarPage({
           يمكنك إضافة الملف إلى تطبيق التقويم (Google Calendar، Apple Calendar، إلخ) للتحديث عند تغيّر الجلسات.
         </p>
         <div className="mt-4">
-          <ZoomBrowserReminders sessions={reminderPayload} />
+          <TeamsBrowserReminders sessions={reminderPayload} />
         </div>
       </Card>
 
       {groups.length === 0 ? (
-        <Card className="p-5 text-sm text-[var(--text-muted)]">لا توجد جلسات Zoom مسجّلة لهذه الدورة بعد.</Card>
+        <Card className="p-5 text-sm text-[var(--text-muted)]">لا توجد جلسات Teams مسجّلة لهذه الدورة بعد.</Card>
       ) : (
         <div className="grid gap-6">
           {groups.map((g) => (

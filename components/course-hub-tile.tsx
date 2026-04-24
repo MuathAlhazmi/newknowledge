@@ -7,7 +7,7 @@ export type CourseHubTileIcon =
   | "materials"
   | "exams"
   | "grades"
-  | "zoom"
+  | "teams"
   | "chat"
   | "feedback"
   | "enrollments"
@@ -46,7 +46,7 @@ function TileIcon({ name }: { name: CourseHubTileIcon }) {
           />
         </svg>
       );
-    case "zoom":
+    case "teams":
       return (
         <svg className={common} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden>
           <path

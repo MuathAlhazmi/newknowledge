@@ -1,9 +1,9 @@
-import { AnnouncementKind, ExamType } from "@prisma/client";
+import { AnnouncementKind, ExamType, MaterialKind } from "@prisma/client";
 import { db } from "@/lib/db";
 
 export type CourseAnnouncementItem = {
   id: string;
-  source: "manual" | "material" | "exam" | "zoom";
+  source: "manual" | "material" | "exam" | "teams";
   kind: AnnouncementKind;
   title: string;
   body: string | null;
@@ -15,6 +15,13 @@ function labelExamType(type: ExamType): string {
   return type === ExamType.PRE ? "اختبار قبلي" : "اختبار بعدي";
 }
 
+function materialAddedBody(kind: MaterialKind): string {
+  if (kind === MaterialKind.DOCX) {
+    return "تمت إضافة مستند Word (DOCX) جديد إلى مواد الدورة.";
+  }
+  return "تمت إضافة ملف PDF جديد إلى مواد الدورة.";
+}
+
 export async function getCourseAnnouncements(
   courseId: string,
   options?: { limit?: number; includeDrafts?: boolean },
@@ -23,7 +30,7 @@ export async function getCourseAnnouncements(
   const includeDrafts = options?.includeDrafts ?? false;
   const now = new Date();
 
-  const [manual, materials, exams, zoom] = await Promise.all([
+  const [manual, materials, exams, teamsSessions] = await Promise.all([
     db.announcement.findMany({
       where: {
         courseId,
@@ -34,7 +41,7 @@ export async function getCourseAnnouncements(
     }),
     db.material.findMany({
       where: { courseId },
-      select: { id: true, title: true, createdAt: true },
+      select: { id: true, title: true, createdAt: true, kind: true },
       orderBy: { createdAt: "desc" },
       take: Math.max(limit, 25),
     }),
@@ -44,7 +51,7 @@ export async function getCourseAnnouncements(
       orderBy: { createdAt: "desc" },
       take: Math.max(limit, 25),
     }),
-    db.zoomSession.findMany({
+    db.teamsSession.findMany({
       where: { courseId },
       select: { id: true, title: true, startsAt: true, createdAt: true },
       orderBy: { startsAt: "desc" },
@@ -67,7 +74,7 @@ export async function getCourseAnnouncements(
       source: "material" as const,
       kind: AnnouncementKind.CONTENT,
       title: `محتوى جديد: ${row.title}`,
-      body: "تمت إضافة ملف PDF جديد إلى مواد الدورة.",
+      body: materialAddedBody(row.kind),
       href: `/courses/${courseId}/materials/${row.id}`,
       publishedAt: row.createdAt,
     })),
@@ -80,13 +87,13 @@ export async function getCourseAnnouncements(
       href: `/courses/${courseId}/exams`,
       publishedAt: row.createdAt,
     })),
-    ...zoom.map((row) => ({
-      id: `zoom:${row.id}`,
-      source: "zoom" as const,
-      kind: AnnouncementKind.ZOOM,
-      title: `جلسة Zoom: ${row.title}`,
+    ...teamsSessions.map((row) => ({
+      id: `teams:${row.id}`,
+      source: "teams" as const,
+      kind: AnnouncementKind.TEAMS,
+      title: `جلسة Teams: ${row.title}`,
       body: `موعد الجلسة: ${row.startsAt.toLocaleString("ar-SA")}`,
-      href: `/courses/${courseId}/zoom`,
+      href: `/courses/${courseId}/teams`,
       publishedAt: row.createdAt,
     })),
   ];

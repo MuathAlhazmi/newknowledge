@@ -35,7 +35,7 @@ enum AnnouncementKind {
   MANUAL
   CONTENT
   QUIZ
-  ZOOM
+  TEAMS
 }
 
 enum CompletionMethod {
@@ -58,6 +58,11 @@ enum ShowSolutionsAfter {
   NEVER
   AFTER_SUBMIT
   AFTER_ATTEMPT_END
+}
+
+enum MaterialKind {
+  PDF
+  DOCX
 }
 
 model User {
@@ -89,8 +94,9 @@ model Course {
   description      String
   enrollments      Enrollment[]
   materials        Material[]
+  materialFolders  MaterialFolder[]
   exams            Exam[]
-  zoomSessions     ZoomSession[]
+  teamsSessions    TeamsSession[]
   feedbacks        Feedback[]
   grades           CourseGrade[]
   postExamApprovals PostExamApproval[]
@@ -144,14 +150,31 @@ model Enrollment {
   @@unique([userId, courseId])
 }
 
+model MaterialFolder {
+  id        String           @id @default(cuid())
+  courseId  String
+  name      String
+  parentId  String?
+  sortOrder Int              @default(0)
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  parent    MaterialFolder?  @relation("MaterialFolderTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  MaterialFolder[] @relation("MaterialFolderTree")
+  materials Material[]
+
+  @@index([courseId, parentId])
+}
+
 model Material {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   courseId    String
+  folderId    String?
+  kind        MaterialKind   @default(PDF)
   title       String
-  pdfPath     String
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  filePath    String
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  folder      MaterialFolder? @relation(fields: [folderId], references: [id], onDelete: Restrict)
   progress    MaterialProgress[]
-  createdAt   DateTime @default(now())
+  createdAt   DateTime       @default(now())
 }
 
 model MaterialProgress {
@@ -304,7 +327,7 @@ model GradingConfig {
   updatedAt      DateTime @updatedAt
 }
 
-model ZoomSession {
+model TeamsSession {
   id          String   @id @default(cuid())
   courseId    String
   title       String
@@ -312,4 +335,6 @@ model ZoomSession {
   startsAt    DateTime
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+
+  @@map("teams_sessions")
 }

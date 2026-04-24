@@ -114,3 +114,61 @@ export function AdminListSkeleton({ rows = 4 }: { rows?: number }) {
     </div>
   );
 }
+
+/** Standard inner page: header strip + primary card (most course/admin tools). */
+export function DefaultAppPageSkeleton() {
+  return (
+    <div className="page-wrap gap-5">
+      <PageHeaderSkeleton />
+      <Card elevated interactive={false} className="p-4 md:p-5">
+        <div className="space-y-3">
+          <SkeletonBlock className="h-5 w-48 max-w-full rounded-lg" />
+          <SkeletonBlock className="h-4 w-full rounded-full" />
+          <SkeletonBlock className="h-4 w-[92%] rounded-full" />
+          <SkeletonBlock className="min-h-[12rem] w-full rounded-xl" />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/** Login/signup-style narrow column. */
+export function NarrowAuthPageSkeleton() {
+  return (
+    <div className="mx-auto grid w-full max-w-xl gap-6">
+      <PageHeaderSkeleton />
+      <Card elevated interactive={false} className="p-5">
+        <div className="space-y-4">
+          <SkeletonBlock className="h-10 w-full rounded-lg" />
+          <SkeletonBlock className="h-10 w-full rounded-lg" />
+          <SkeletonBlock className="h-11 w-full rounded-xl" />
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/** Marketing landing hero + feature grid. */
+export function LandingPageSkeleton() {
+  return (
+    <div className="page-wrap gap-10">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <SkeletonBlock className="h-16 w-16 rounded-2xl" />
+        <SkeletonBlock className="mx-auto h-10 w-72 max-w-full rounded-xl" />
+        <SkeletonBlock className="mx-auto h-4 w-full max-w-lg rounded-full" />
+        <SkeletonBlock className="mx-auto h-11 w-40 rounded-xl" />
+      </div>
+      <CourseTileGridSkeleton count={4} />
+    </div>
+  );
+}
+
+/** Admin list hub: title + stacked rows. */
+export function AdminTablePageSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="page-wrap gap-5">
+      <PageHeaderSkeleton />
+      <AdminListSkeleton rows={rows} />
+    </div>
+  );
+}

@@ -14,7 +14,7 @@ const kindLabel: Record<AnnouncementKind, string> = {
   [AnnouncementKind.MANUAL]: "إعلان",
   [AnnouncementKind.CONTENT]: "محتوى",
   [AnnouncementKind.QUIZ]: "اختبار",
-  [AnnouncementKind.ZOOM]: "Zoom",
+  [AnnouncementKind.TEAMS]: "Teams",
 };
 
 export default async function AdminCourseAnnouncementsPage({
@@ -66,7 +66,7 @@ export default async function AdminCourseAnnouncementsPage({
                 <option value={AnnouncementKind.MANUAL}>إعلان عام</option>
                 <option value={AnnouncementKind.CONTENT}>محتوى</option>
                 <option value={AnnouncementKind.QUIZ}>اختبار</option>
-                <option value={AnnouncementKind.ZOOM}>Zoom</option>
+                <option value={AnnouncementKind.TEAMS}>Teams</option>
               </select>
             </label>
             <label className="flex items-center gap-2 text-sm">
@@ -120,7 +120,7 @@ export default async function AdminCourseAnnouncementsPage({
                         <option value={AnnouncementKind.MANUAL}>إعلان عام</option>
                         <option value={AnnouncementKind.CONTENT}>محتوى</option>
                         <option value={AnnouncementKind.QUIZ}>اختبار</option>
-                        <option value={AnnouncementKind.ZOOM}>Zoom</option>
+                        <option value={AnnouncementKind.TEAMS}>Teams</option>
                       </select>
                       <div className="flex flex-wrap gap-2">
                         <button type="submit" className="nk-btn nk-btn-secondary text-xs">

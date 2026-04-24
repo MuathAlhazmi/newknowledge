@@ -1,3 +1,4 @@
+import { MaterialKind } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -19,11 +20,11 @@ export async function GET(
   const material = await db.material.findFirst({
     where: { id: materialId, courseId },
   });
-  if (!material?.pdfPath) {
+  if (!material || material.kind !== MaterialKind.PDF || !material.filePath) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const bytes = await loadMaterialPdfBytes(material.pdfPath);
+  const bytes = await loadMaterialPdfBytes(material.filePath);
   if (!bytes?.length) {
     return new NextResponse("Bad request", { status: 400 });
   }

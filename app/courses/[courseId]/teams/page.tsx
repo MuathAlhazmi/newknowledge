@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 
-export default async function ZoomPage({
+export default async function TeamsSessionsPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
@@ -14,14 +14,14 @@ export default async function ZoomPage({
   const approved = await requireApprovedEnrollment(user.id, courseId);
   if (!approved) notFound();
 
-  const sessions = await db.zoomSession.findMany({
+  const sessions = await db.teamsSession.findMany({
     where: { courseId },
     orderBy: { startsAt: "asc" },
   });
 
   return (
     <div className="page-wrap gap-5">
-      <PageHeader title="الجلسات المباشرة" subtitle="مواعيد الجلسات وروابط الانضمام." />
+      <PageHeader title="جلسات Teams" subtitle="مواعيد الجلسات وروابط الانضمام إلى Microsoft Teams." />
       {sessions.length === 0 ? (
         <EmptyState text="لا توجد جلسات مجدولة حاليًا." />
       ) : (

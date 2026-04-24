@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireCourseOwner } from "@/lib/course-staff";
 import { db } from "@/lib/db";
-import { deleteStoredMaterialPdf } from "@/lib/delete-material-storage";
+import { deleteStoredMaterialFile } from "@/lib/delete-material-storage";
 
 export async function deleteCourseAction(formData: FormData) {
   const courseId = String(formData.get("courseId") ?? "").trim();
@@ -30,12 +30,12 @@ export async function deleteCourseAction(formData: FormData) {
 
   const materialRows = await db.material.findMany({
     where: { courseId },
-    select: { pdfPath: true },
+    select: { filePath: true },
   });
 
   await db.course.delete({ where: { id: courseId } });
 
-  await Promise.allSettled(materialRows.map((m) => deleteStoredMaterialPdf(m.pdfPath)));
+  await Promise.allSettled(materialRows.map((m) => deleteStoredMaterialFile(m.filePath)));
 
   revalidatePath("/admin/courses");
   redirect("/admin/courses?deleted=course");

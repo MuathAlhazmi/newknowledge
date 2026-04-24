@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { formatSupabaseStorageRef } from "@/lib/material-storage-ref";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET ?? "materials";
@@ -68,8 +69,7 @@ export async function uploadPdfBuffer(buffer: Buffer): Promise<UploadPdfResult> 
   });
 
   if (!uploadError) {
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(objectName);
-    return { path: publicUrlData.publicUrl };
+    return { path: formatSupabaseStorageRef(BUCKET, objectName) };
   }
 
   if (supabaseErrorSuggestsMissingOrWrongBucket(uploadError.message)) {
