@@ -7,6 +7,22 @@ import { saveCourseMaterialAction } from "@/app/admin/(instructor)/courses/[cour
 import { arCopy } from "@/lib/copy/ar";
 import { Card } from "@/components/ui";
 import { snackbarError, snackbarSuccess } from "@/lib/snackbar";
+import { createClient as createSupabaseBrowserClient } from "@/utils/supabase/client";
+
+type SignResponse =
+  | {
+      fallback: false;
+      kind: "pdf" | "docx";
+      bucket: string;
+      objectName: string;
+      signedUrl: string;
+      token: string;
+      storageRef: string;
+      contentType: string;
+      maxBytes: number;
+    }
+  | { fallback: true; kind: "pdf" | "docx" }
+  | { error: string; code: string; maxBytes?: number };
 
 const u = arCopy.materialUpload;
 
@@ -115,40 +131,97 @@ export function PdfUploadForm({
     setSubmitting(true);
     setMessage("");
     try {
-      const uploadData = new FormData();
-      uploadData.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: uploadData });
-      const contentType = res.headers.get("content-type") ?? "";
-      const body = contentType.includes("application/json")
-        ? ((await res.json()) as { path?: string; code?: string; kind?: string })
-        : ({ code: res.status === 413 ? "FILE_TOO_LARGE" : undefined } as {
-            path?: string;
-            code?: string;
-            kind?: string;
-          });
-      if (!res.ok) {
-        const err = uploadErrorMessage(body.code);
+      const signRes = await fetch("/api/upload/sign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          mime: file.type,
+          size: file.size,
+        }),
+      });
+      const signCt = signRes.headers.get("content-type") ?? "";
+      const signBody: SignResponse = signCt.includes("application/json")
+        ? ((await signRes.json()) as SignResponse)
+        : ({
+            error: "SIGN_FAILED",
+            code: signRes.status === 413 ? "FILE_TOO_LARGE" : "SIGN_FAILED",
+          } as SignResponse);
+      if (!signRes.ok) {
+        const code = "code" in signBody ? signBody.code : undefined;
+        const err = uploadErrorMessage(code);
         setMessage(err);
         snackbarError(err);
         return;
       }
-      if (!body.path) {
+
+      let storagePath: string | null = null;
+      let resolvedKind: "pdf" | "docx" | null = null;
+
+      if ("fallback" in signBody && signBody.fallback === false) {
+        resolvedKind = signBody.kind;
+        const supabase = createSupabaseBrowserClient();
+        const { error: putError } = await supabase.storage
+          .from(signBody.bucket)
+          .uploadToSignedUrl(signBody.objectName, signBody.token, file, {
+            contentType: signBody.contentType,
+            upsert: false,
+          });
+        if (putError) {
+          const msg = putError.message ?? "";
+          const looksTooLarge = /too large|payload|413|exceed/i.test(msg);
+          const err = looksTooLarge ? u.errors.tooLarge : u.errors.generic;
+          setMessage(err);
+          snackbarError(err);
+          return;
+        }
+        storagePath = signBody.storageRef;
+      } else if ("fallback" in signBody && signBody.fallback === true) {
+        resolvedKind = signBody.kind;
+        const uploadData = new FormData();
+        uploadData.append("file", file);
+        const res = await fetch("/api/upload", { method: "POST", body: uploadData });
+        const ct = res.headers.get("content-type") ?? "";
+        const body = ct.includes("application/json")
+          ? ((await res.json()) as { path?: string; code?: string; kind?: string })
+          : ({ code: res.status === 413 ? "FILE_TOO_LARGE" : undefined } as {
+              path?: string;
+              code?: string;
+              kind?: string;
+            });
+        if (!res.ok || !body.path) {
+          const err = uploadErrorMessage(body.code);
+          setMessage(err);
+          snackbarError(err);
+          return;
+        }
+        storagePath = body.path;
+        if (body.kind === "pdf" || body.kind === "docx") {
+          resolvedKind = body.kind;
+        }
+      } else {
+        setMessage(u.errors.generic);
+        snackbarError(u.errors.generic);
+        return;
+      }
+
+      if (!storagePath) {
         setMessage(u.errors.generic);
         snackbarError(u.errors.generic);
         return;
       }
 
       const materialKind =
-        body.kind === "docx"
+        resolvedKind === "docx"
           ? MaterialKind.DOCX
-          : body.kind === "pdf"
+          : resolvedKind === "pdf"
             ? MaterialKind.PDF
             : detectUploadKind(file)!;
 
       const result = await saveCourseMaterialAction(
         courseId,
         title.trim(),
-        body.path,
+        storagePath,
         materialKind,
         folderId.trim() || null,
       );
