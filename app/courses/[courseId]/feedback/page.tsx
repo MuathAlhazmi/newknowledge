@@ -1,14 +1,17 @@
 import { revalidatePath } from "next/cache";
-import { notFound } from "next/navigation";
 import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
+import { isPreviewingCourse, requireCourseLearnerView } from "@/lib/course-preview";
 import { Card, PageHeader } from "@/components/ui";
 
 async function submitFeedbackAction(formData: FormData) {
   "use server";
-  const user = await requireParticipant();
   const courseId = String(formData.get("courseId"));
+  // Refuse silently when staff is in preview mode for this course.
+  if (await isPreviewingCourse(courseId)) return;
+
+  const user = await requireParticipant();
   const text = String(formData.get("text") ?? "").trim();
   if (!text) return;
 
@@ -26,15 +29,16 @@ export default async function FeedbackPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  const isPreview = mode === "preview";
 
-  const feedbacks = await db.feedback.findMany({
-    where: { userId: user.id, courseId },
-    orderBy: { createdAt: "desc" },
-  });
+  const feedbacks = isPreview
+    ? []
+    : await db.feedback.findMany({
+        where: { userId: user.id, courseId },
+        orderBy: { createdAt: "desc" },
+      });
 
   return (
     <div className="page-wrap gap-5">
@@ -42,8 +46,19 @@ export default async function FeedbackPage({
       <Card elevated>
         <form action={submitFeedbackAction} className="grid gap-2">
           <input type="hidden" name="courseId" value={courseId} />
-          <textarea name="text" rows={4} required placeholder="اكتب ملاحظتك هنا..." />
-          <button type="submit" className="nk-btn nk-btn-primary w-fit">
+          <textarea
+            name="text"
+            rows={4}
+            required={!isPreview}
+            disabled={isPreview}
+            placeholder={isPreview ? "وضع العرض — لا يمكن إرسال ملاحظة." : "اكتب ملاحظتك هنا..."}
+          />
+          <button
+            type="submit"
+            disabled={isPreview}
+            className="nk-btn nk-btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60"
+            title={isPreview ? "وضع العرض — للقراءة فقط" : undefined}
+          >
             إرسال الملاحظة
           </button>
         </form>

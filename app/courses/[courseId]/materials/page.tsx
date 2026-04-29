@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { MaterialKind } from "@prisma/client";
-import { notFound } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { materialFoldersWithLabels } from "@/lib/material-folder-labels";
-import { requireApprovedEnrollment } from "@/lib/guards";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { Card, EmptyState, PageHeader } from "@/components/ui";
 
 function kindHint(kind: MaterialKind) {
@@ -16,10 +14,8 @@ export default async function MaterialsPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  await requireCourseLearnerView(courseId);
 
   const [folderRows, materials] = await Promise.all([
     db.materialFolder.findMany({

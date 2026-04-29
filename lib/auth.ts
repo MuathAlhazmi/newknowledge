@@ -81,8 +81,9 @@ export async function requireAdmin() {
 
 export async function requireInstructor() {
   const user = await requireUser();
+  // Platform admins act as implicit course staff everywhere instructor-side.
   if (user.role === UserRole.ADMIN) {
-    redirect("/admin");
+    return user;
   }
   if (user.role === UserRole.PARTICIPANT) {
     if (!user.platformApproved) {

@@ -1,18 +1,45 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EnrollmentStatus } from "@prisma/client";
-import { requireParticipant } from "@/lib/auth";
 import { getCourseProgressSnapshot } from "@/lib/course-progress";
 import { db } from "@/lib/db";
-import { Card, PageHeader } from "@/components/ui";
+import { requireCourseLearnerView } from "@/lib/course-preview";
+import { Card, PageHeader, WarningCard } from "@/components/ui";
 
 export default async function CourseCompletionPage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  const isPreview = mode === "preview";
+
+  const courseTitle = isPreview
+    ? (await db.course.findUnique({ where: { id: courseId }, select: { title: true } }))?.title
+    : null;
+
+  if (isPreview) {
+    if (!courseTitle) notFound();
+    return (
+      <div className="page-wrap gap-6">
+        <PageHeader
+          eyebrow="التقدّم والإكمال"
+          title="سجل التقدّم في الدورة"
+          subtitle={courseTitle}
+          actions={
+            <Link href={`/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
+              مركز الدورة
+            </Link>
+          }
+        />
+        <WarningCard>
+          هذه معاينة لصفحة التقدّم كما يراها المتدرب. لن يظهر هنا تقدّم فعلي لأن وضع العرض للقراءة فقط.
+        </WarningCard>
+      </div>
+    );
+  }
+
   const enrollment = await db.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId } },
     include: { course: { select: { title: true } } },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { EnrollmentStatus } from "@prisma/client";
+import { EnrollmentStatus, UserRole } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
+import { hasCourseAccess } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 
 function icsEscape(s: string): string {
@@ -21,10 +22,16 @@ export async function GET(
   }
 
   const { courseId } = await params;
-  const enrollment = await db.enrollment.findUnique({
-    where: { userId_courseId: { userId: user.id, courseId } },
-  });
-  if (!enrollment || enrollment.status !== EnrollmentStatus.APPROVED) {
+  let allowed = false;
+  if (user.role === UserRole.PARTICIPANT) {
+    const enrollment = await db.enrollment.findUnique({
+      where: { userId_courseId: { userId: user.id, courseId } },
+    });
+    allowed = Boolean(enrollment && enrollment.status === EnrollmentStatus.APPROVED);
+  } else {
+    allowed = await hasCourseAccess(user, courseId);
+  }
+  if (!allowed) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 

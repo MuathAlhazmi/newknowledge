@@ -37,6 +37,11 @@ export function HeaderRoleNav({
             إدارة المنصة
           </HeaderNavLink>
         </li>
+        <li>
+          <HeaderNavLink href="/admin/courses" prefixMatch>
+            لوحة الدورات
+          </HeaderNavLink>
+        </li>
       </ul>
     );
   }

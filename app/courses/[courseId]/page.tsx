@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EnrollmentStatus } from "@prisma/client";
-import { requireParticipant } from "@/lib/auth";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { getCourseAnnouncements } from "@/lib/course-announcements";
 import { getCourseProgressSnapshot } from "@/lib/course-progress";
 import { db } from "@/lib/db";
@@ -22,24 +22,38 @@ export default async function CourseDetailsPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const enrollment = await db.enrollment.findUnique({
-    where: { userId_courseId: { userId: user.id, courseId } },
-    select: {
-      status: true,
-      course: {
-        select: {
-          title: true,
-          description: true,
-        },
-      },
-    },
-  });
-  if (!enrollment) notFound();
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  const isPreview = mode === "preview";
 
-  const approved = enrollment.status === EnrollmentStatus.APPROVED;
-  const progress = approved ? await getCourseProgressSnapshot(user.id, courseId) : null;
+  const enrollment = isPreview
+    ? null
+    : await db.enrollment.findUnique({
+        where: { userId_courseId: { userId: user.id, courseId } },
+        select: {
+          status: true,
+          course: {
+            select: {
+              title: true,
+              description: true,
+            },
+          },
+        },
+      });
+  if (!enrollment && !isPreview) notFound();
+
+  const previewCourse = isPreview
+    ? await db.course.findUnique({
+        where: { id: courseId },
+        select: { title: true, description: true },
+      })
+    : null;
+  if (isPreview && !previewCourse) notFound();
+
+  const courseInfo = enrollment ? enrollment.course : previewCourse!;
+
+  const approved = isPreview || enrollment?.status === EnrollmentStatus.APPROVED;
+  const progress = !isPreview && approved ? await getCourseProgressSnapshot(user.id, courseId) : null;
   const announcementPreview = approved
     ? await getCourseAnnouncements(courseId, { limit: 4 })
     : [];
@@ -101,8 +115,8 @@ export default async function CourseDetailsPage({
   return (
     <div className="page-wrap gap-6">
       <CourseHeroCard
-        title={enrollment.course.title}
-        description={enrollment.course.description}
+        title={courseInfo.title}
+        description={courseInfo.description}
         approved={approved}
         helperText={approved ? "اختر أحد الأقسام أدناه للانتقال مباشرة." : undefined}
       />

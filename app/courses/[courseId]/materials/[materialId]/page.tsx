@@ -1,10 +1,9 @@
 import { MaterialKind } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { recordMaterialOpened } from "@/lib/course-progress";
 import { db } from "@/lib/db";
-import { requireApprovedEnrollment } from "@/lib/guards";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { MaterialPdfIframe } from "@/components/material-pdf-iframe";
 import { Card, PageHeader } from "@/components/ui";
 
@@ -13,17 +12,17 @@ export default async function MaterialViewerPage({
 }: {
   params: Promise<{ courseId: string; materialId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId, materialId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  const { user, mode } = await requireCourseLearnerView(courseId);
 
   const material = await db.material.findFirst({
     where: { id: materialId, courseId },
   });
   if (!material) notFound();
 
-  await recordMaterialOpened(user.id, materialId, courseId);
+  if (mode === "learner") {
+    await recordMaterialOpened(user.id, materialId, courseId);
+  }
 
   if (material.kind === MaterialKind.DOCX) {
     const downloadHref = `/api/courses/${courseId}/materials/${materialId}/file`;

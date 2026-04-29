@@ -20,6 +20,7 @@ import {
   arCountTeamsSessions,
 } from "@/lib/copy/ar";
 import { CourseTeamPanel } from "@/components/course-team-panel";
+import { InstructorPreviewToggle } from "@/components/instructor-preview-toggle";
 import { canManageCourseTeam, requireCourseAccess } from "@/lib/course-staff";
 import { deleteCourseAction } from "@/app/admin/(instructor)/courses/[courseId]/danger-actions";
 import { StatusBadge, WarningCard } from "@/components/ui";
@@ -161,6 +162,7 @@ export default async function AdminCourseHubPage({
             <Link href="/admin/courses" className="nk-btn nk-btn-secondary text-sm">
               جميع الدورات
             </Link>
+            <InstructorPreviewToggle courseId={courseId} />
           </>
         }
       />

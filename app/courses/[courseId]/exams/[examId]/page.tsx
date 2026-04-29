@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { ensureExamDraft } from "@/lib/exam-draft";
 import { db } from "@/lib/db";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { QuizAttemptShell } from "@/components/quiz-attempt-shell";
 import { submitExamAction } from "@/app/courses/[courseId]/exams/[examId]/submit-exam-action";
 
@@ -10,8 +10,12 @@ export default async function ExamAttemptPage({
 }: {
   params: Promise<{ courseId: string; examId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId, examId } = await params;
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  if (mode === "preview") {
+    // Preview is read-only — never start a real attempt as a staff member.
+    redirect(`/courses/${courseId}/exams`);
+  }
 
   const examMeta = await db.exam.findFirst({
     where: { id: examId, courseId, isActive: true },

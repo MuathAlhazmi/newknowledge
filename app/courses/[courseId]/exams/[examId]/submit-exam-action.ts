@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { ExamAttemptStatus } from "@prisma/client";
 import { requireParticipant } from "@/lib/auth";
 import { ensureCourseCompletion } from "@/lib/course-progress";
+import { isPreviewingCourse } from "@/lib/course-preview";
 import { db } from "@/lib/db";
 import { finalizeExamAttemptFromForm } from "@/lib/exam-submit";
 
@@ -19,11 +20,15 @@ function getInternalBaseUrl(h: Headers): string | null {
 }
 
 export async function submitExamAction(formData: FormData) {
-  const user = await requireParticipant();
   const examId = String(formData.get("examId") ?? "").trim();
   const courseId = String(formData.get("courseId") ?? "").trim();
   const attemptId = String(formData.get("attemptId") ?? "").trim();
   if (!examId || !courseId || !attemptId) return;
+  // Refuse if a staff member somehow triggered this while previewing as learner.
+  if (await isPreviewingCourse(courseId)) {
+    redirect(`/courses/${courseId}/exams`);
+  }
+  const user = await requireParticipant();
 
   const result = await finalizeExamAttemptFromForm(user.id, courseId, attemptId, formData);
   if (!result.ok) return;

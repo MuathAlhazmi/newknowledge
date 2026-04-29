@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { recomputeCourseGrade, requireApprovedEnrollment } from "@/lib/guards";
+import { recomputeCourseGrade } from "@/lib/guards";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { FinalScoreBar, GradingCriteriaReadOnly, ScoreRow } from "@/components/grade-display";
 import { Card, PageHeader, StatusBadge, WarningCard } from "@/components/ui";
 
@@ -11,22 +11,54 @@ export default async function GradesPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  const isPreview = mode === "preview";
 
-  await recomputeCourseGrade(user.id, courseId);
+  if (!isPreview) {
+    await recomputeCourseGrade(user.id, courseId);
+  }
 
-  let grade = await db.courseGrade.findUnique({
-    where: { courseId_userId: { courseId, userId: user.id } },
-  });
+  let grade = isPreview
+    ? null
+    : await db.courseGrade.findUnique({
+        where: { courseId_userId: { courseId, userId: user.id } },
+      });
   const [config, course] = await Promise.all([
     db.gradingConfig.findUnique({ where: { courseId } }),
     db.course.findUnique({ where: { id: courseId }, select: { title: true } }),
   ]);
 
   if (!course) notFound();
+
+  if (isPreview) {
+    return (
+      <div className="page-wrap gap-6">
+        <PageHeader
+          eyebrow="الدرجة العامة"
+          title="النتيجة النهائية"
+          subtitle={course.title}
+          actions={
+            <Link href={`/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
+              مركز الدورة
+            </Link>
+          }
+        />
+        <WarningCard>
+          هذه معاينة لصفحة الدرجة كما يراها المتدرب. لن تظهر هنا درجات حقيقية لأن وضع العرض للقراءة فقط.
+        </WarningCard>
+        {config ? (
+          <Card elevated className="p-5">
+            <GradingCriteriaReadOnly config={config} />
+          </Card>
+        ) : (
+          <Card className="p-5 text-sm text-[var(--text-muted)]">
+            لم تُضبط معايير التقييم لهذه الدورة بعد. يمكن ضبطها من شاشة إدارة الدرجات.
+          </Card>
+        )}
+      </div>
+    );
+  }
 
   if (!config) {
     return (

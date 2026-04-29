@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EnrollmentStatus } from "@prisma/client";
+import { EnrollmentStatus, UserRole } from "@prisma/client";
 import { AdminCourseDashboardCard } from "@/components/admin-dashboard-ui";
 import { requireInstructor } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -8,7 +8,10 @@ import { EmptyState, PageHeader } from "@/components/ui";
 export default async function InstructorCoursesIndexPage() {
   const user = await requireInstructor();
   const courses = await db.course.findMany({
-    where: { courseInstructors: { some: { userId: user.id } } },
+    where:
+      user.role === UserRole.ADMIN
+        ? undefined
+        : { courseInstructors: { some: { userId: user.id } } },
     orderBy: { title: "asc" },
     include: {
       _count: {

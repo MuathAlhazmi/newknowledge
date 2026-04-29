@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { requireApprovedEnrollment } from "@/lib/guards";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { TeamsBrowserReminders } from "@/components/teams-browser-reminders";
 import { Card, PageHeader } from "@/components/ui";
 
@@ -19,10 +18,8 @@ export default async function CourseCalendarPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  await requireCourseLearnerView(courseId);
 
   const course = await db.course.findUnique({
     where: { id: courseId },

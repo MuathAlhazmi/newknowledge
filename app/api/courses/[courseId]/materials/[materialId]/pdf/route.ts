@@ -1,19 +1,23 @@
-import { MaterialKind } from "@prisma/client";
+import { MaterialKind, UserRole } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { requireParticipant } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { loadMaterialPdfBytes } from "@/lib/material-pdf-source";
+import { hasCourseAccess } from "@/lib/course-staff";
 import { requireApprovedEnrollment } from "@/lib/guards";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ courseId: string; materialId: string }> },
 ) {
-  const user = await requireParticipant();
+  const user = await requireUser();
   const { courseId, materialId } = await params;
 
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) {
+  const allowed =
+    user.role === UserRole.PARTICIPANT
+      ? await requireApprovedEnrollment(user.id, courseId)
+      : await hasCourseAccess(user, courseId);
+  if (!allowed) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 

@@ -5,17 +5,26 @@ import { requireParticipant } from "@/lib/auth";
 import { getCourseChatStaffIds } from "@/lib/chat-staff";
 import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
+import { isPreviewingCourse, requireCourseLearnerView } from "@/lib/course-preview";
 import type { ChatActionState } from "@/components/chat-types";
 import { LearnerChatSection } from "@/components/learner-chat-section";
-import { PageHeader } from "@/components/ui";
+import { Card, PageHeader, WarningCard } from "@/components/ui";
 
 async function sendMessageAction(
   _prev: ChatActionState,
   formData: FormData,
 ): Promise<ChatActionState> {
   "use server";
-  const sender = await requireParticipant();
   const courseId = String(formData.get("courseId"));
+  if (await isPreviewingCourse(courseId)) {
+    return {
+      ok: false,
+      message: "وضع العرض — لا يمكن إرسال رسائل أثناء المعاينة كمتدرب.",
+      submittedAt: Date.now(),
+    };
+  }
+
+  const sender = await requireParticipant();
   const text = String(formData.get("text") ?? "").trim();
   if (!text) {
     return { ok: false, message: "يرجى كتابة رسالة قبل الإرسال.", submittedAt: Date.now() };
@@ -50,29 +59,49 @@ export default async function ChatPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  const isPreview = mode === "preview";
 
   const staffIds = await getCourseChatStaffIds(courseId);
   if (staffIds.length === 0) notFound();
 
-  const [course, messages] = await Promise.all([
-    db.course.findUnique({ where: { id: courseId }, select: { title: true } }),
-    db.chatMessage.findMany({
-      where: {
-        courseId,
-        AND: [
-          { OR: [{ senderId: user.id }, { receiverId: user.id }] },
-          { OR: [{ senderId: { in: staffIds } }, { receiverId: { in: staffIds } }] },
-        ],
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
-
+  const course = await db.course.findUnique({ where: { id: courseId }, select: { title: true } });
   if (!course) notFound();
+
+  if (isPreview) {
+    return (
+      <div className="page-wrap gap-6">
+        <PageHeader
+          eyebrow="التواصل الرسمي"
+          title="المحادثات مع فريق المنصة"
+          subtitle={course.title}
+          actions={
+            <Link href={`/courses/${courseId}`} className="nk-btn nk-btn-secondary text-sm">
+              مركز الدورة
+            </Link>
+          }
+        />
+        <WarningCard>
+          هذه معاينة لشاشة المحادثة كما يراها المتدرب. لن تظهر رسائل حقيقية، ولا يمكن إرسال رسائل في وضع العرض.
+        </WarningCard>
+        <Card elevated className="p-5 text-sm text-[var(--text-muted)]">
+          سيظهر للمتدرب مربع كتابة الرسائل وسجل محادثاته مع فريق المنصة هنا.
+        </Card>
+      </div>
+    );
+  }
+
+  const messages = await db.chatMessage.findMany({
+    where: {
+      courseId,
+      AND: [
+        { OR: [{ senderId: user.id }, { receiverId: user.id }] },
+        { OR: [{ senderId: { in: staffIds } }, { receiverId: { in: staffIds } }] },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+  });
 
   const initialMessages = messages.map((m) => ({
     id: m.id,

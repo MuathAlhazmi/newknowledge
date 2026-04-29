@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { getCourseAnnouncements } from "@/lib/course-announcements";
 import { db } from "@/lib/db";
-import { requireApprovedEnrollment } from "@/lib/guards";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { CourseAnnouncementsList } from "@/components/course-announcements-list";
 import { PageHeader } from "@/components/ui";
 
@@ -12,10 +11,8 @@ export default async function CourseAnnouncementsPage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  await requireCourseLearnerView(courseId);
 
   const [course, items] = await Promise.all([
     db.course.findUnique({ where: { id: courseId }, select: { title: true } }),

@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { ExamType } from "@prisma/client";
-import { notFound } from "next/navigation";
-import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isPostExamUnlocked, requireApprovedEnrollment } from "@/lib/guards";
+import { isPostExamUnlocked } from "@/lib/guards";
+import { requireCourseLearnerView } from "@/lib/course-preview";
 import { Card, PageHeader, WarningCard } from "@/components/ui";
 
 export default async function ExamsPage({
@@ -13,17 +12,16 @@ export default async function ExamsPage({
   params: Promise<{ courseId: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const user = await requireParticipant();
   const { courseId } = await params;
   const qs = await searchParams;
-  const approved = await requireApprovedEnrollment(user.id, courseId);
-  if (!approved) notFound();
+  const { user, mode } = await requireCourseLearnerView(courseId);
+  const isPreview = mode === "preview";
 
   const exams = await db.exam.findMany({
     where: { courseId, isActive: true },
     orderBy: { type: "asc" },
   });
-  const postUnlocked = await isPostExamUnlocked(user.id, courseId);
+  const postUnlocked = isPreview ? true : await isPostExamUnlocked(user.id, courseId);
 
   return (
     <div className="page-wrap gap-5">
@@ -56,6 +54,15 @@ export default async function ExamsPage({
               <div className="mt-3">
                 <WarningCard>الاختبار البعدي مغلق حتى اعتماد الإدارة بعد إكمال الاختبار القبلي.</WarningCard>
               </div>
+            ) : isPreview ? (
+              <button
+                type="button"
+                disabled
+                className="nk-btn nk-btn-primary mt-3 cursor-not-allowed opacity-60"
+                title="وضع العرض — لا يمكن بدء محاولة فعلية"
+              >
+                بدء الاختبار
+              </button>
             ) : (
               <Link
                 href={`/courses/${courseId}/exams/${exam.id}`}
