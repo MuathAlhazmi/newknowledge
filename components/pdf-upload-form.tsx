@@ -118,7 +118,14 @@ export function PdfUploadForm({
       const uploadData = new FormData();
       uploadData.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: uploadData });
-      const body = (await res.json()) as { path?: string; code?: string; kind?: string };
+      const contentType = res.headers.get("content-type") ?? "";
+      const body = contentType.includes("application/json")
+        ? ((await res.json()) as { path?: string; code?: string; kind?: string })
+        : ({ code: res.status === 413 ? "FILE_TOO_LARGE" : undefined } as {
+            path?: string;
+            code?: string;
+            kind?: string;
+          });
       if (!res.ok) {
         const err = uploadErrorMessage(body.code);
         setMessage(err);

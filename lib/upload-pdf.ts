@@ -7,7 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET ?? "materials";
 
 /** Max PDF size for admin upload (bytes). */
-export const PDF_UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+export const PDF_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
 
 function isSupabaseStorageConfigured() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
