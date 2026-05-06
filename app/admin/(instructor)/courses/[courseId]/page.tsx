@@ -23,6 +23,7 @@ import { CourseTeamPanel } from "@/components/course-team-panel";
 import { InstructorPreviewToggle } from "@/components/instructor-preview-toggle";
 import { canManageCourseTeam, requireCourseAccess } from "@/lib/course-staff";
 import { deleteCourseAction } from "@/app/admin/(instructor)/courses/[courseId]/danger-actions";
+import { PendingFieldset, PendingFormOverlay, PendingSubmitButton } from "@/components/form-pending";
 import { StatusBadge, WarningCard } from "@/components/ui";
 
 const teamRoleLabel: Record<CourseInstructorRole, string> = {
@@ -244,33 +245,38 @@ export default async function AdminCourseHubPage({
                 فشل الحذف: تأكيدات الأمان غير مكتملة. أدخل عنوان الدورة حرفيًا، واكتب DELETE، وفعّل مربع الإقرار.
               </p>
             ) : null}
-            <form action={deleteCourseAction} className="mt-4 grid gap-3 rounded-xl border border-rose-300/60 bg-rose-50/40 p-4 dark:bg-rose-950/20">
-              <input type="hidden" name="courseId" value={courseId} />
-              <label className="grid gap-1 text-sm">
-                <span className="font-medium">للتأكيد، اكتب عنوان الدورة كما هو:</span>
-                <input
-                  name="confirmTitle"
-                  placeholder={course.title}
-                  className="max-w-xl rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
-                  required
+            <form action={deleteCourseAction} className="relative mt-4 grid gap-3 rounded-xl border border-rose-300/60 bg-rose-50/40 p-4 dark:bg-rose-950/20">
+              <PendingFormOverlay text="جارٍ حذف الدورة..." />
+              <PendingFieldset className="grid gap-3">
+                <input type="hidden" name="courseId" value={courseId} />
+                <label className="grid gap-1 text-sm">
+                  <span className="font-medium">للتأكيد، اكتب عنوان الدورة كما هو:</span>
+                  <input
+                    name="confirmTitle"
+                    placeholder={course.title}
+                    className="max-w-xl rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+                    required
+                  />
+                </label>
+                <label className="grid gap-1 text-sm">
+                  <span className="font-medium">اكتب DELETE بالأحرف الكبيرة:</span>
+                  <input
+                    name="confirmWord"
+                    placeholder="DELETE"
+                    className="max-w-xs rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+                    required
+                  />
+                </label>
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" name="acknowledgeCascade" className="nk-check mt-0.5" />
+                  <span>أقر بأن حذف الدورة سيزيل بياناتها نهائيًا ولا يمكن التراجع عن ذلك.</span>
+                </label>
+                <PendingSubmitButton
+                  idleText="حذف الدورة نهائيًا"
+                  pendingText="جارٍ حذف الدورة..."
+                  className="nk-btn nk-btn-secondary w-fit text-sm text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/40"
                 />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span className="font-medium">اكتب DELETE بالأحرف الكبيرة:</span>
-                <input
-                  name="confirmWord"
-                  placeholder="DELETE"
-                  className="max-w-xs rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
-                  required
-                />
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" name="acknowledgeCascade" className="nk-check mt-0.5" />
-                <span>أقر بأن حذف الدورة سيزيل بياناتها نهائيًا ولا يمكن التراجع عن ذلك.</span>
-              </label>
-              <button type="submit" className="nk-btn nk-btn-secondary w-fit text-sm text-rose-700 hover:bg-rose-100 dark:hover:bg-rose-950/40">
-                حذف الدورة نهائيًا
-              </button>
+              </PendingFieldset>
             </form>
           </section>
         ) : null}

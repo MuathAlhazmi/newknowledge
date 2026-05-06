@@ -81,11 +81,17 @@ model User {
   courseGrades       CourseGrade[]
   courseInstructors  CourseInstructor[]
   announcements      Announcement[]     @relation("AnnouncementAuthor")
+  teamsAttendance    TeamsSessionAttendance[] @relation("TeamsAttendanceUser")
+  teamsMarkedAttendance TeamsSessionAttendance[] @relation("TeamsAttendanceMarkedBy")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   approvedPostExams  PostExamApproval[] @relation("ApprovedBy")
   materialProgress   MaterialProgress[]
   courseCompletions  CourseCompletion[]
+
+  manualAssessmentsCreated ManualAssessment[] @relation("ManualAssessmentCreatedBy")
+  manualAssessmentScores  ManualAssessmentScore[] @relation("ManualAssessmentScoreUser")
+  manualAssessmentGradedScores ManualAssessmentScore[] @relation("ManualAssessmentScoreGradedBy")
 }
 
 model Course {
@@ -97,6 +103,7 @@ model Course {
   materialFolders  MaterialFolder[]
   exams            Exam[]
   teamsSessions    TeamsSession[]
+  manualAssessments ManualAssessment[]
   feedbacks        Feedback[]
   grades           CourseGrade[]
   postExamApprovals PostExamApproval[]
@@ -321,6 +328,7 @@ model GradingConfig {
   courseId       String   @unique
   preWeight      Int
   postWeight     Int
+  manualWeight   Int      @default(0)
   passThreshold  Int
   course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())
@@ -336,5 +344,64 @@ model TeamsSession {
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
 
+  attendance TeamsSessionAttendance[]
+
   @@map("teams_sessions")
+}
+
+model TeamsSessionAttendance {
+  id String @id @default(cuid())
+
+  sessionId String
+  userId String
+
+  present Boolean
+
+  markedById String
+  markedAt DateTime @default(now())
+
+  session TeamsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user User @relation("TeamsAttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  markedBy User @relation("TeamsAttendanceMarkedBy", fields: [markedById], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, userId])
+}
+
+model ManualAssessment {
+  id String @id @default(cuid())
+
+  courseId String
+  title String
+  maxScore Float @default(100)
+
+  createdById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdBy User @relation("ManualAssessmentCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  scores ManualAssessmentScore[]
+
+  @@index([courseId])
+}
+
+model ManualAssessmentScore {
+  id String @id @default(cuid())
+
+  assessmentId String
+  userId String
+
+  score Float
+
+  gradedById String
+  gradedAt DateTime @default(now())
+
+  assessment ManualAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  user User @relation("ManualAssessmentScoreUser", fields: [userId], references: [id], onDelete: Cascade)
+  gradedBy User @relation("ManualAssessmentScoreGradedBy", fields: [gradedById], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, userId])
+  @@index([assessmentId, userId])
 }

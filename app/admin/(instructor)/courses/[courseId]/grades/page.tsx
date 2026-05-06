@@ -5,6 +5,7 @@ import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/c
 import { db } from "@/lib/db";
 import { recomputeCourseGrade } from "@/lib/guards";
 import { arCopy } from "@/lib/copy/ar";
+import { PendingFieldset, PendingSubmitButton } from "@/components/form-pending";
 import { FinalScoreBar, GradingCriteriaReadOnly, ScoreRow } from "@/components/grade-display";
 import { Card, EmptyState, PageHeader, StatusBadge, WarningCard } from "@/components/ui";
 import type { CourseGrade } from "@prisma/client";
@@ -94,6 +95,12 @@ export default async function AdminGradesPage({
             <Link href={`/admin/courses/${courseId}/exams`} className="nk-btn nk-btn-secondary text-sm">
               {ag.linkExams}
             </Link>
+            <Link
+              href={`/admin/courses/${courseId}/grades/manual`}
+              className="nk-btn nk-btn-secondary text-sm"
+            >
+              الدرجات اليدوية
+            </Link>
           </div>
         }
       />
@@ -166,28 +173,34 @@ export default async function AdminGradesPage({
                         <form action={recalcAction}>
                           <input type="hidden" name="courseId" value={courseId} />
                           <input type="hidden" name="userId" value={row.userId} />
-                          <button type="submit" className="nk-btn nk-btn-secondary text-sm">
-                            {ag.recalc}
-                          </button>
+                          <PendingSubmitButton
+                            idleText={ag.recalc}
+                            pendingText="جارٍ إعادة الحساب..."
+                            className="nk-btn nk-btn-secondary text-sm"
+                          />
                         </form>
                         <form action={updateFinalGradeAction} className="flex flex-wrap items-end gap-2">
-                          <input type="hidden" name="courseId" value={courseId} />
-                          <input type="hidden" name="userId" value={row.userId} />
-                          <label className="grid gap-1 text-sm">
-                            <span className="text-[var(--text-muted)]">{ag.finalScoreField}</span>
-                            <input
-                              name="finalScore"
-                              type="number"
-                              min={0}
-                              max={100}
-                              step="0.1"
-                              defaultValue={grade?.finalScore ?? 0}
-                              className="!w-28"
+                          <PendingFieldset className="contents">
+                            <input type="hidden" name="courseId" value={courseId} />
+                            <input type="hidden" name="userId" value={row.userId} />
+                            <label className="grid gap-1 text-sm">
+                              <span className="text-[var(--text-muted)]">{ag.finalScoreField}</span>
+                              <input
+                                name="finalScore"
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="0.1"
+                                defaultValue={grade?.finalScore ?? 0}
+                                className="!w-28"
+                              />
+                            </label>
+                            <PendingSubmitButton
+                              idleText={ag.saveEdit}
+                              pendingText="جارٍ الحفظ..."
+                              className="nk-btn nk-btn-primary text-sm"
                             />
-                          </label>
-                          <button type="submit" className="nk-btn nk-btn-primary text-sm">
-                            {ag.saveEdit}
-                          </button>
+                          </PendingFieldset>
                         </form>
                       </div>
                     ) : null}

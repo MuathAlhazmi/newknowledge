@@ -75,6 +75,44 @@ function defaultQuestion(seed?: string): QuestionRow {
   };
 }
 
+function rowsFromImportedPreview(
+  rows: { questionText: string; choices: [string, string, string, string]; correctRaw: string }[],
+): QuestionRow[] {
+  const parsed = rows
+    .map((row, idx) => {
+      const letters = row.correctRaw.trim().toUpperCase();
+      const numeric = Number(row.correctRaw.trim());
+      const correctIdx =
+        letters === "A"
+          ? 0
+          : letters === "B"
+            ? 1
+            : letters === "C"
+              ? 2
+              : letters === "D"
+                ? 3
+                : Number.isFinite(numeric) && numeric >= 1 && numeric <= 4
+                  ? numeric - 1
+                  : 0;
+      const cleanChoices = row.choices.map((c) => c.trim());
+      return {
+        id: `import-q-${idx + 1}`,
+        kind: "MCQ" as const,
+        text: row.questionText.trim(),
+        points: 1,
+        rubric: "",
+        choices: cleanChoices.map((text, ci) => ({
+          id: `import-q-${idx + 1}-c-${ci + 1}`,
+          text,
+          isCorrect: ci === correctIdx,
+        })),
+      };
+    })
+    .filter((q) => q.text && q.choices.filter((c) => c.text).length >= 2);
+
+  return parsed.length > 0 ? parsed : [defaultQuestion("import-fallback-q-1")];
+}
+
 function rowsFromInitial(
   initial: InstructorExamEditorProps["initial"],
 ): QuestionRow[] {
@@ -142,11 +180,22 @@ export function InstructorExamEditor({ courseId, examType, initial, canEdit = tr
   >([]);
   const [importLoading, setImportLoading] = useState(false);
   const [importPending, startImportTransition] = useTransition();
+  const initialSerial = JSON.stringify(initial);
 
   useOnSerialChange(JSON.stringify(state ?? null), () => {
     if (!state) return;
     if (state.ok === true) snackbarSuccess(state.message);
     if (state.ok === false) snackbarError(state.error);
+  });
+  useOnSerialChange(initialSerial, () => {
+    // When router.refresh() fetches fresh exam rows, synchronize local editor state.
+    setTitle(initial.title);
+    setDurationMinutes(String(initial.durationMinutes));
+    setIsActive(initial.isActive);
+    setQuestions(rowsFromInitial(initial));
+    setImportTable(null);
+    setMapping(emptyMapping());
+    setImportPreview([]);
   });
 
   function setCorrectAnswer(questionId: string, choiceId: string) {
@@ -306,6 +355,11 @@ export function InstructorExamEditor({ courseId, examType, initial, canEdit = tr
       const next = await importExamFromSheetAction(state, fd);
       setState(next);
       if (next?.ok === true) {
+        // Apply imported rows immediately so the editor updates without waiting on navigation cache timing.
+        setQuestions(rowsFromImportedPreview(mappedRows));
+        setImportTable(null);
+        setMapping(emptyMapping());
+        setImportPreview([]);
         router.refresh();
       }
     });
@@ -354,6 +408,9 @@ export function InstructorExamEditor({ courseId, examType, initial, canEdit = tr
     startTransition(async () => {
       const next = await saveGradedExamAction(state, fd);
       setState(next);
+      if (next?.ok === true) {
+        router.refresh();
+      }
     });
   }
 

@@ -3,6 +3,7 @@ import { requireParticipant } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requireApprovedEnrollment } from "@/lib/guards";
 import { isPreviewingCourse, requireCourseLearnerView } from "@/lib/course-preview";
+import { PendingFieldset, PendingSubmitButton } from "@/components/form-pending";
 import { Card, PageHeader } from "@/components/ui";
 
 async function submitFeedbackAction(formData: FormData) {
@@ -45,22 +46,22 @@ export default async function FeedbackPage({
       <PageHeader title="ملاحظاتك" subtitle="شاركنا رأيك لمساعدتنا على تحسين التجربة التدريبية." />
       <Card elevated>
         <form action={submitFeedbackAction} className="grid gap-2">
-          <input type="hidden" name="courseId" value={courseId} />
-          <textarea
-            name="text"
-            rows={4}
-            required={!isPreview}
-            disabled={isPreview}
-            placeholder={isPreview ? "وضع العرض — لا يمكن إرسال ملاحظة." : "اكتب ملاحظتك هنا..."}
-          />
-          <button
-            type="submit"
-            disabled={isPreview}
-            className="nk-btn nk-btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60"
-            title={isPreview ? "وضع العرض — للقراءة فقط" : undefined}
-          >
-            إرسال الملاحظة
-          </button>
+          <PendingFieldset className="grid gap-2">
+            <input type="hidden" name="courseId" value={courseId} />
+            <textarea
+              name="text"
+              rows={4}
+              required={!isPreview}
+              disabled={isPreview}
+              placeholder={isPreview ? "وضع العرض — لا يمكن إرسال ملاحظة." : "اكتب ملاحظتك هنا..."}
+            />
+            <PendingSubmitButton
+              disabled={isPreview}
+              idleText="إرسال الملاحظة"
+              pendingText="جارٍ الإرسال..."
+              className="nk-btn nk-btn-primary w-fit disabled:cursor-not-allowed disabled:opacity-60"
+            />
+          </PendingFieldset>
         </form>
       </Card>
 

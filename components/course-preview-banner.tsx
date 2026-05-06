@@ -1,4 +1,5 @@
 import { exitPreviewAction } from "@/lib/course-preview";
+import { PendingSubmitButton } from "@/components/form-pending";
 
 /**
  * Top-of-page banner shown to course staff who are previewing a course as a
@@ -32,12 +33,11 @@ export function CoursePreviewBanner({ courseId }: { courseId: string }) {
         </p>
       </div>
       <form action={submit} className="shrink-0">
-        <button
-          type="submit"
+        <PendingSubmitButton
+          idleText="إنهاء العرض"
+          pendingText="جارٍ الإنهاء..."
           className="nk-btn nk-btn-secondary !border-amber-400/70 !bg-amber-100 !text-amber-950 hover:!bg-amber-200 dark:!bg-amber-400/20 dark:!text-amber-50 text-xs sm:text-sm"
-        >
-          إنهاء العرض
-        </button>
+        />
       </form>
     </div>
   );

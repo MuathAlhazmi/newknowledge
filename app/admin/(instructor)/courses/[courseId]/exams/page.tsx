@@ -6,6 +6,7 @@ import { canEditCourse, requireCourseAccess, requireCourseEditor } from "@/lib/c
 import { db } from "@/lib/db";
 import { recomputeCourseGrade } from "@/lib/guards";
 import { arCopy } from "@/lib/copy/ar";
+import { PendingFieldset, PendingFormOverlay, PendingSubmitButton } from "@/components/form-pending";
 import { GradingCriteriaReadOnly } from "@/components/grade-display";
 import { Card, PageHeader, StatusBadge } from "@/components/ui";
 
@@ -29,13 +30,14 @@ async function updateGradingConfigAction(formData: FormData) {
   await requireCourseEditor(courseId);
   const preWeight = Number(formData.get("preWeight"));
   const postWeight = Number(formData.get("postWeight"));
+  const manualWeight = Number(formData.get("manualWeight"));
   const passThreshold = Number(formData.get("passThreshold"));
-  if (preWeight + postWeight !== 100) return;
+  if (preWeight + postWeight + manualWeight !== 100) return;
 
   await db.gradingConfig.upsert({
     where: { courseId },
-    create: { courseId, preWeight, postWeight, passThreshold },
-    update: { preWeight, postWeight, passThreshold },
+    create: { courseId, preWeight, postWeight, manualWeight, passThreshold },
+    update: { preWeight, postWeight, manualWeight, passThreshold },
   });
 
   const approvedEnrollments = await db.enrollment.findMany({
@@ -114,23 +116,38 @@ export default async function AdminExamsPage({
         <Card elevated variant="highlight" interactive={false} className="p-5 md:p-6">
           <h2 className="mb-1 text-base font-bold text-[var(--primary-strong)]">معايير احتساب الدرجة</h2>
           <p className="mb-4 text-xs text-[var(--text-muted)]">{ae.configHelper}</p>
-          <form action={updateGradingConfigAction} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:items-end">
-            <input type="hidden" name="courseId" value={courseId} />
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium text-[var(--foreground)]">وزن القبلي %</span>
-              <input name="preWeight" type="number" min={0} max={100} defaultValue={config.preWeight} />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium text-[var(--foreground)]">وزن البعدي %</span>
-              <input name="postWeight" type="number" min={0} max={100} defaultValue={config.postWeight} />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span className="font-medium text-[var(--foreground)]">درجة الاجتياز %</span>
-              <input name="passThreshold" type="number" min={0} max={100} defaultValue={config.passThreshold} />
-            </label>
-            <button className="nk-btn nk-btn-primary w-full md:col-span-2 lg:col-span-1" type="submit">
-              {arCopy.buttons.save}
-            </button>
+          <form action={updateGradingConfigAction} className="relative grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:items-end">
+            <PendingFormOverlay text="جارٍ حفظ المعايير..." variant="progress" />
+            <PendingFieldset className="contents">
+              <input type="hidden" name="courseId" value={courseId} />
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-[var(--foreground)]">وزن القبلي %</span>
+                <input name="preWeight" type="number" min={0} max={100} defaultValue={config.preWeight} />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-[var(--foreground)]">وزن اليدوي %</span>
+                <input
+                  name="manualWeight"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={config.manualWeight ?? 0}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-[var(--foreground)]">وزن البعدي %</span>
+                <input name="postWeight" type="number" min={0} max={100} defaultValue={config.postWeight} />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-[var(--foreground)]">درجة الاجتياز %</span>
+                <input name="passThreshold" type="number" min={0} max={100} defaultValue={config.passThreshold} />
+              </label>
+              <PendingSubmitButton
+                idleText={arCopy.buttons.save}
+                pendingText="جارٍ الحفظ..."
+                className="nk-btn nk-btn-primary w-full md:col-span-2 lg:col-span-1"
+              />
+            </PendingFieldset>
           </form>
         </Card>
       )}
@@ -170,13 +187,12 @@ export default async function AdminExamsPage({
                     <form action={approvePostExamAction} className="mt-4">
                       <input type="hidden" name="courseId" value={courseId} />
                       <input type="hidden" name="userId" value={user.id} />
-                      <button
+                      <PendingSubmitButton
                         disabled={!preDone}
-                        type="submit"
+                        idleText="السماح بالاختبار البعدي"
+                        pendingText="جارٍ الاعتماد..."
                         className="nk-btn nk-btn-secondary text-sm disabled:opacity-50"
-                      >
-                        السماح بالاختبار البعدي
-                      </button>
+                      />
                     </form>
                   ) : null}
                 </Card>

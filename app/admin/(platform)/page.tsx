@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EnrollmentStatus, UserRole } from "@prisma/client";
 import { CreatePlatformUserForm, MinimalEnrollForm } from "@/components/admin-hub-forms";
 import { AdminUserDirectory } from "@/components/admin-user-directory";
+import { PendingSubmitButton } from "@/components/form-pending";
 import { db } from "@/lib/db";
 import { arCopy } from "@/lib/copy/ar";
 import { Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
@@ -93,9 +94,11 @@ export default async function AdminHubPage() {
                   </div>
                   <form action={approvePlatformUserAction}>
                     <input type="hidden" name="userId" value={u.id} />
-                    <button type="submit" className="nk-btn nk-btn-primary">
-                      {arCopy.glossary.accountApproval}
-                    </button>
+                    <PendingSubmitButton
+                      idleText={arCopy.glossary.accountApproval}
+                      pendingText="جارٍ الاعتماد..."
+                      className="nk-btn nk-btn-primary"
+                    />
                   </form>
                 </Card>
               </li>
@@ -144,9 +147,11 @@ export default async function AdminHubPage() {
                     <form action={approveGlobalEnrollmentAction}>
                       <input type="hidden" name="enrollmentId" value={e.id} />
                       <input type="hidden" name="courseId" value={e.courseId} />
-                      <button type="submit" className="nk-btn nk-btn-primary text-sm">
-                        {arCopy.glossary.enrollmentApproval}
-                      </button>
+                      <PendingSubmitButton
+                        idleText={arCopy.glossary.enrollmentApproval}
+                        pendingText="جارٍ الاعتماد..."
+                        className="nk-btn nk-btn-primary text-sm"
+                      />
                     </form>
                   </div>
                 </Card>

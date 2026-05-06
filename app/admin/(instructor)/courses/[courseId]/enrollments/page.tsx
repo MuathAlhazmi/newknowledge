@@ -4,6 +4,7 @@ import { UserRole } from "@prisma/client";
 import { canEditCourse, requireCourseAccess } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 import { AddEnrollmentForm } from "@/components/add-enrollment-form";
+import { PendingSubmitButton } from "@/components/form-pending";
 import { arCopy } from "@/lib/copy/ar";
 import { Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
 import { approveEnrollmentAction } from "./actions";
@@ -84,9 +85,11 @@ export default async function AdminEnrollmentsPage({
                   <form action={approveEnrollmentAction} className="mt-4 border-t border-[var(--border)] pt-4">
                     <input type="hidden" name="courseId" value={courseId} />
                     <input type="hidden" name="enrollmentId" value={enrollment.id} />
-                    <button type="submit" className="nk-btn nk-btn-primary text-sm">
-                      اعتماد الطلب
-                    </button>
+                    <PendingSubmitButton
+                      idleText="اعتماد الطلب"
+                      pendingText="جارٍ الاعتماد..."
+                      className="nk-btn nk-btn-primary text-sm"
+                    />
                   </form>
                 )}
               </Card>

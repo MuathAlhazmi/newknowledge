@@ -64,18 +64,52 @@ export async function recomputeCourseGrade(userId: string, courseId: string) {
   const preScore = preAttempt?.score ?? null;
   const postScore = postAttempt?.score ?? null;
 
+  const manualAssessments = await db.manualAssessment.findMany({
+    where: { courseId },
+    select: { id: true, maxScore: true },
+  });
+
+  const assessmentIds = manualAssessments.map((a) => a.id);
+  let manualPercent = 0;
+  let hasManualScore = false;
+  if (assessmentIds.length > 0) {
+    const manualScores = await db.manualAssessmentScore.findMany({
+      where: { userId, assessmentId: { in: assessmentIds } },
+      select: { assessmentId: true, score: true },
+    });
+
+    const scoreByAssessment = new Map(manualScores.map((s) => [s.assessmentId, s.score]));
+    let sum = 0;
+    let count = 0;
+    for (const a of manualAssessments) {
+      const score = scoreByAssessment.get(a.id);
+      if (score == null) continue;
+      if (a.maxScore <= 0) continue;
+      sum += (score / a.maxScore) * 100;
+      count++;
+    }
+    hasManualScore = count > 0;
+    manualPercent = hasManualScore ? sum / count : 0;
+  }
+
   let finalScore: number | null = null;
-  if (preScore !== null || postScore !== null) {
+  if (preScore !== null || postScore !== null || hasManualScore) {
     const safePre = preScore ?? 0;
     const safePost = postScore ?? 0;
-    finalScore = (safePre * config.preWeight + safePost * config.postWeight) / 100;
+    const activeManualWeight = hasManualScore ? config.manualWeight : 0;
+    const activeWeight = config.preWeight + config.postWeight + activeManualWeight;
+    if (activeWeight > 0) {
+      finalScore =
+        (safePre * config.preWeight + safePost * config.postWeight + manualPercent * activeManualWeight) /
+        activeWeight;
+    }
   }
 
   const isPassed = finalScore !== null ? finalScore >= config.passThreshold : null;
 
   return db.courseGrade.upsert({
     where: { courseId_userId: { courseId, userId } },
-    create: { courseId, userId, preScore, postScore, finalScore, isPassed },
-    update: { preScore, postScore, finalScore, isPassed },
+    create: { courseId, userId, preScore, postScore, finalScore, isPassed, updatedByAdmin: false },
+    update: { preScore, postScore, finalScore, isPassed, updatedByAdmin: false },
   });
 }

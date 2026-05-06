@@ -8,6 +8,7 @@ import {
   togglePublishAnnouncementAction,
   updateAnnouncementAction,
 } from "@/app/admin/(instructor)/courses/[courseId]/announcements/actions";
+import { PendingFieldset, PendingSubmitButton } from "@/components/form-pending";
 import { Card, EmptyState, PageHeader, WarningCard } from "@/components/ui";
 
 const kindLabel: Record<AnnouncementKind, string> = {
@@ -51,31 +52,35 @@ export default async function AdminCourseAnnouncementsPage({
         <Card elevated interactive={false} className="grid gap-4 p-5">
           <h2 className="text-base font-semibold">إضافة إعلان جديد</h2>
           <form action={createAnnouncementAction} className="grid gap-3">
-            <input type="hidden" name="courseId" value={courseId} />
-            <label className="grid gap-1 text-sm">
-              <span>العنوان</span>
-              <input name="title" required maxLength={300} className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2" />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span>التفاصيل (اختياري)</span>
-              <textarea name="body" rows={3} className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2" />
-            </label>
-            <label className="grid gap-1 text-sm">
-              <span>النوع</span>
-              <select name="kind" className="max-w-sm rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
-                <option value={AnnouncementKind.MANUAL}>إعلان عام</option>
-                <option value={AnnouncementKind.CONTENT}>محتوى</option>
-                <option value={AnnouncementKind.QUIZ}>اختبار</option>
-                <option value={AnnouncementKind.TEAMS}>Teams</option>
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="publishNow" defaultChecked className="nk-check" />
-              نشر الآن
-            </label>
-            <button type="submit" className="nk-btn nk-btn-primary w-fit text-sm">
-              حفظ الإعلان
-            </button>
+            <PendingFieldset className="grid gap-3">
+              <input type="hidden" name="courseId" value={courseId} />
+              <label className="grid gap-1 text-sm">
+                <span>العنوان</span>
+                <input name="title" required maxLength={300} className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2" />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span>التفاصيل (اختياري)</span>
+                <textarea name="body" rows={3} className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2" />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span>النوع</span>
+                <select name="kind" className="max-w-sm rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2">
+                  <option value={AnnouncementKind.MANUAL}>إعلان عام</option>
+                  <option value={AnnouncementKind.CONTENT}>محتوى</option>
+                  <option value={AnnouncementKind.QUIZ}>اختبار</option>
+                  <option value={AnnouncementKind.TEAMS}>Teams</option>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="publishNow" defaultChecked className="nk-check" />
+                نشر الآن
+              </label>
+              <PendingSubmitButton
+                idleText="حفظ الإعلان"
+                pendingText="جارٍ الحفظ..."
+                className="nk-btn nk-btn-primary w-fit text-sm"
+              />
+            </PendingFieldset>
           </form>
         </Card>
       )}
@@ -97,36 +102,40 @@ export default async function AdminCourseAnnouncementsPage({
                   </div>
                   {canEdit ? (
                     <form action={updateAnnouncementAction} className="grid gap-2">
-                      <input type="hidden" name="courseId" value={courseId} />
-                      <input type="hidden" name="announcementId" value={row.id} />
-                      <input
-                        name="title"
-                        defaultValue={row.title}
-                        required
-                        maxLength={300}
-                        className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
-                      />
-                      <textarea
-                        name="body"
-                        defaultValue={row.body ?? ""}
-                        rows={3}
-                        className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
-                      />
-                      <select
-                        name="kind"
-                        defaultValue={row.kind}
-                        className="max-w-sm rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
-                      >
-                        <option value={AnnouncementKind.MANUAL}>إعلان عام</option>
-                        <option value={AnnouncementKind.CONTENT}>محتوى</option>
-                        <option value={AnnouncementKind.QUIZ}>اختبار</option>
-                        <option value={AnnouncementKind.TEAMS}>Teams</option>
-                      </select>
-                      <div className="flex flex-wrap gap-2">
-                        <button type="submit" className="nk-btn nk-btn-secondary text-xs">
-                          تحديث
-                        </button>
-                      </div>
+                      <PendingFieldset className="grid gap-2">
+                        <input type="hidden" name="courseId" value={courseId} />
+                        <input type="hidden" name="announcementId" value={row.id} />
+                        <input
+                          name="title"
+                          defaultValue={row.title}
+                          required
+                          maxLength={300}
+                          className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+                        />
+                        <textarea
+                          name="body"
+                          defaultValue={row.body ?? ""}
+                          rows={3}
+                          className="rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+                        />
+                        <select
+                          name="kind"
+                          defaultValue={row.kind}
+                          className="max-w-sm rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-2"
+                        >
+                          <option value={AnnouncementKind.MANUAL}>إعلان عام</option>
+                          <option value={AnnouncementKind.CONTENT}>محتوى</option>
+                          <option value={AnnouncementKind.QUIZ}>اختبار</option>
+                          <option value={AnnouncementKind.TEAMS}>Teams</option>
+                        </select>
+                        <div className="flex flex-wrap gap-2">
+                          <PendingSubmitButton
+                            idleText="تحديث"
+                            pendingText="جارٍ التحديث..."
+                            className="nk-btn nk-btn-secondary text-xs"
+                          />
+                        </div>
+                      </PendingFieldset>
                     </form>
                   ) : (
                     <>
@@ -139,16 +148,20 @@ export default async function AdminCourseAnnouncementsPage({
                       <form action={togglePublishAnnouncementAction}>
                         <input type="hidden" name="courseId" value={courseId} />
                         <input type="hidden" name="announcementId" value={row.id} />
-                        <button type="submit" className="nk-btn nk-btn-secondary text-xs">
-                          {row.publishedAt ? "إلغاء النشر" : "نشر الآن"}
-                        </button>
+                        <PendingSubmitButton
+                          idleText={row.publishedAt ? "إلغاء النشر" : "نشر الآن"}
+                          pendingText="جارٍ التنفيذ..."
+                          className="nk-btn nk-btn-secondary text-xs"
+                        />
                       </form>
                       <form action={deleteAnnouncementAction}>
                         <input type="hidden" name="courseId" value={courseId} />
                         <input type="hidden" name="announcementId" value={row.id} />
-                        <button type="submit" className="nk-btn nk-btn-secondary text-xs text-rose-700">
-                          حذف
-                        </button>
+                        <PendingSubmitButton
+                          idleText="حذف"
+                          pendingText="جارٍ الحذف..."
+                          className="nk-btn nk-btn-secondary text-xs text-rose-700"
+                        />
                       </form>
                     </div>
                   ) : null}

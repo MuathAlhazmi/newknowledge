@@ -4,6 +4,7 @@ import { ExamAttemptStatus, QuestionKind } from "@prisma/client";
 import { requireCourseAccess } from "@/lib/course-staff";
 import { db } from "@/lib/db";
 import { gradePendingAttemptAction } from "@/app/admin/(instructor)/courses/[courseId]/exams/grading-actions";
+import { PendingSubmitButton } from "@/components/form-pending";
 import { Card, PageHeader } from "@/components/ui";
 
 export default async function ExamGradingQueuePage({
@@ -104,9 +105,11 @@ export default async function ExamGradingQueuePage({
                 <form action={gradePendingAttemptAction} className="mt-2 flex flex-wrap gap-2">
                   <input type="hidden" name="courseId" value={courseId} />
                   <input type="hidden" name="attemptId" value={row.id} />
-                  <button type="submit" className="nk-btn nk-btn-primary text-sm">
-                    حفظ التقييم وإغلاق المحاولة
-                  </button>
+                  <PendingSubmitButton
+                    idleText="حفظ التقييم وإغلاق المحاولة"
+                    pendingText="جارٍ حفظ التقييم..."
+                    className="nk-btn nk-btn-primary text-sm"
+                  />
                 </form>
               </Card>
             </li>

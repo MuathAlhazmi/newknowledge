@@ -1,6 +1,7 @@
 export type GradingCriteriaValues = {
   preWeight: number;
   postWeight: number;
+  manualWeight: number;
   passThreshold: number;
 };
 
@@ -89,6 +90,20 @@ export function GradingCriteriaReadOnly({
             />
           </div>
         </div>
+
+        <div>
+          <div className="mb-2 flex justify-between text-sm text-[var(--text-muted)]">
+            <span>يدوي</span>
+            <span className="font-semibold text-[var(--foreground)]">{config.manualWeight}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
+            <div
+              className="h-full rounded-full bg-[var(--primary)]/25 ring-1 ring-inset ring-[var(--border-strong)]"
+              style={{ width: `${config.manualWeight}%` }}
+            />
+          </div>
+        </div>
+
         <div>
           <div className="mb-2 flex justify-between text-sm text-[var(--text-muted)]">
             <span>بعدي</span>
