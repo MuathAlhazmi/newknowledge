@@ -32,7 +32,7 @@ function MaterialPdfIframeFrame({ src, title, className = "" }: MaterialPdfIfram
 
   return (
     <div
-      className={`relative min-h-[75vh] w-full ${className}`.trim()}
+      className={`relative isolate min-h-0 w-full overscroll-y-contain ${className}`.trim()}
       aria-busy={loading}
     >
       {loading ? (
@@ -43,13 +43,19 @@ function MaterialPdfIframeFrame({ src, title, className = "" }: MaterialPdfIfram
           </div>
         </div>
       ) : null}
-      <iframe
-        src={src}
-        title={title}
-        onLoad={finishLoading}
-        onError={finishLoading}
-        className="h-[75vh] w-full rounded-xl border-0 bg-white"
-      />
+      {/*
+        Bounded height + min-h-0: on iPad Safari, flex ancestors and PDF iframes often steal scroll
+        unless this subtree can shrink; overscroll-y-contain reduces scroll chaining to the page.
+      */}
+      <div className="h-[min(75vh,85dvh)] max-h-[85dvh] w-full overflow-hidden rounded-xl bg-white [-webkit-overflow-scrolling:touch]">
+        <iframe
+          src={src}
+          title={title}
+          onLoad={finishLoading}
+          onError={finishLoading}
+          className="block h-full min-h-[min(75vh,85dvh)] w-full border-0 bg-white"
+        />
+      </div>
     </div>
   );
 }

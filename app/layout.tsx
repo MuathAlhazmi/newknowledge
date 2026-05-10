@@ -40,7 +40,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col text-[var(--foreground)]">
         <SiteHeader userPromise={userPromise} />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 md:px-6 md:py-10 lg:py-12">{children}</main>
+        <main className="mx-auto w-full min-h-0 max-w-6xl flex-1 px-4 py-8 md:px-6 md:py-10 lg:py-12">{children}</main>
         <AppToaster />
         {/* Script is only served on Vercel; omit locally / self-hosted to avoid 404 on /_vercel/speed-insights/script.js */}
         {process.env.VERCEL ? <SpeedInsights /> : null}
