@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { recordMaterialOpened } from "@/lib/course-progress";
 import { db } from "@/lib/db";
+import { materialSuggestedDownloadName } from "@/lib/material-content-disposition";
 import { requireCourseLearnerView } from "@/lib/course-preview";
 import { MaterialPdfIframe } from "@/components/material-pdf-iframe";
 import { Card, PageHeader } from "@/components/ui";
@@ -36,7 +37,7 @@ export default async function MaterialViewerPage({
           <a
             href={downloadHref}
             className="nk-btn nk-btn-primary inline-flex items-center gap-2"
-            download
+            download={materialSuggestedDownloadName(material.title, "docx")}
           >
             تنزيل DOCX
           </a>
@@ -50,15 +51,47 @@ export default async function MaterialViewerPage({
     );
   }
 
-  return (
-    <div className="page-wrap gap-5">
-      <PageHeader title={material.title} subtitle="عرض مباشر داخل المنصة بدون تحميل." />
-      <Card className="p-2">
-        <MaterialPdfIframe
-          src={`/api/courses/${courseId}/materials/${materialId}/pdf#toolbar=0`}
+  if (material.kind === MaterialKind.PDF) {
+    const pdfSrc = `/api/courses/${courseId}/materials/${materialId}/pdf#toolbar=0`;
+    const pdfOpenHref = `/api/courses/${courseId}/materials/${materialId}/pdf`;
+    const downloadHref = `/api/courses/${courseId}/materials/${materialId}/file`;
+    return (
+      <div className="page-wrap gap-5">
+        <PageHeader
           title={material.title}
+          subtitle="معاينة داخل المتصفح، أو فتح الملف في صفحة جديدة، أو تنزيله كملف PDF."
         />
-      </Card>
-    </div>
-  );
+        <Card className="p-4">
+          <div className="mb-3 flex flex-wrap gap-2">
+            <a
+              href={pdfOpenHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="nk-btn nk-btn-secondary inline-flex items-center gap-2 text-sm"
+            >
+              فتح في صفحة جديدة
+            </a>
+            <a
+              href={downloadHref}
+              className="nk-btn nk-btn-primary inline-flex items-center gap-2 text-sm"
+              download={materialSuggestedDownloadName(material.title, "pdf")}
+            >
+              تنزيل
+            </a>
+          </div>
+          <MaterialPdfIframe src={pdfSrc} title={material.title} />
+          <div className="mt-4 px-2 pb-2">
+            <Link
+              href={`/courses/${courseId}/materials`}
+              className="text-sm font-medium text-[var(--primary-strong)] underline-offset-2 hover:underline"
+            >
+              العودة إلى قائمة المواد
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  notFound();
 }

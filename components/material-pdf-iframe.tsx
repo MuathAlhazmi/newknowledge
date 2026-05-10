@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -22,6 +22,12 @@ function MaterialPdfIframeFrame({ src, title, className = "" }: MaterialPdfIfram
 
   const finishLoading = useCallback(() => {
     setLoading(false);
+  }, []);
+
+  /** PDFs in iframes often omit or delay `onLoad`; avoid a stuck overlay. */
+  useEffect(() => {
+    const t = window.setTimeout(() => setLoading(false), 3500);
+    return () => window.clearTimeout(t);
   }, []);
 
   return (
